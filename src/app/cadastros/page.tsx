@@ -130,49 +130,52 @@ export default function CadastrosClientesPage() {
     } else if (activeTab === 'transportes') {
       transportMutation.mutate({ name: transName, capacity: transCapacity, active: transActive });
     } else if (activeTab === 'itens') {
-      // Itens não possuem rota de updateItem, portanto sempre acionam a criação
       itemMutation.mutate({ name: itemName, category: itemCategory, unitOfMeasure: itemUnit });
     }
   };
 
   return (
-    <div className="space-y-6 w-full">
-      {/* Cabeçalho */}
-      <div className="flex items-center justify-between w-full">
+    <div className="space-y-6 w-full p-4 md:p-0 pb-16 md:pb-0">
+      {/* Cabeçalho Responsivo */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">🗂️ Cadastros Básicos</h1>
           <p className="text-slate-400 text-sm mt-1">Gerenciamento unificado de parceiros, modais de carga e itens operacionais.</p>
         </div>
         <button 
+          type="button"
           onClick={abrirModalCriar}
-          className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 rounded-xl font-bold text-xs shadow-lg transition"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 rounded-xl font-bold text-xs shadow-lg transition w-full sm:w-auto"
         >
           <Plus className="h-4 w-4" />
           Novo Registro
         </button>
       </div>
 
-      {/* Menu de Abas */}
-      <div className="flex border-b border-slate-800 gap-2">
+      {/* Menu de Abas com Rolagem Horizontal se faltar espaço */}
+      <div className="flex border-b border-slate-800 gap-2 overflow-x-auto whitespace-nowrap scrollbar-none">
         <button
+          type="button"
           onClick={() => { setActiveTab('clientes'); setSearchTerm(''); }}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-mono uppercase tracking-wider font-bold border-b-2 transition-all ${
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-mono uppercase tracking-wider font-bold border-b-2 transition-all shrink-0 ${
             activeTab === 'clientes' ? 'border-emerald-500 text-emerald-400 bg-emerald-500/5' : 'border-transparent text-slate-400 hover:text-white'
           }`}
         >
           <Users className="h-4 w-4" /> Clientes
         </button>
         <button
+          type="button"
           onClick={() => { setActiveTab('transportes'); setSearchTerm(''); }}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-mono uppercase tracking-wider font-bold border-b-2 transition-all ${
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-mono uppercase tracking-wider font-bold border-b-2 transition-all shrink-0 ${
             activeTab === 'transportes' ? 'border-emerald-500 text-emerald-400 bg-emerald-500/5' : 'border-transparent text-slate-400 hover:text-white'
           }`}
         >
           <Truck className="h-4 w-4" /> Tipos de Transporte
         </button>
         <button
+          type="button"
           onClick={() => { setActiveTab('itens'); setSearchTerm(''); }}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-mono uppercase tracking-wider font-bold border-b-2 transition-all ${
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-mono uppercase tracking-wider font-bold border-b-2 transition-all shrink-0 ${
             activeTab === 'itens' ? 'border-emerald-500 text-emerald-400 bg-emerald-500/5' : 'border-transparent text-slate-400 hover:text-white'
           }`}
         >
@@ -199,10 +202,10 @@ export default function CadastrosClientesPage() {
         />
       </div>
 
-      {/* Tabela de Dados */}
+      {/* Tabela de Dados com Proteção Mobile */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-        <div className="overflow-x-auto w-full">
-          <table className="w-full text-left border-collapse">
+        <div className="overflow-x-auto w-full scrollbar-thin scrollbar-thumb-slate-800">
+          <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-slate-950/40 border-b border-slate-800 text-slate-400 font-mono text-xs uppercase tracking-wider">
                 <th className="py-3 px-4 font-medium">ID</th>
@@ -248,7 +251,7 @@ export default function CadastrosClientesPage() {
                       </div>
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <button onClick={() => abrirModalEditar(c)} className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-emerald-400 rounded-lg"><Edit2 className="h-3.5 w-3.5" /></button>
+                      <button type="button" onClick={() => abrirModalEditar(c)} className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-emerald-400 rounded-lg"><Edit2 className="h-3.5 w-3.5" /></button>
                     </td>
                   </tr>
                 ))
@@ -266,7 +269,7 @@ export default function CadastrosClientesPage() {
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold font-mono border ${t.active ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>{t.active ? 'ATIVO' : 'INATIVO'}</span>
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <button onClick={() => abrirModalEditar(t)} className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-emerald-400 rounded-lg"><Edit2 className="h-3.5 w-3.5" /></button>
+                      <button type="button" onClick={() => abrirModalEditar(t)} className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-emerald-400 rounded-lg"><Edit2 className="h-3.5 w-3.5" /></button>
                     </td>
                   </tr>
                 ))
@@ -281,7 +284,6 @@ export default function CadastrosClientesPage() {
                     <td className="py-3 px-4 font-medium text-white">{i.name}</td>
                     <td className="py-3 px-4 text-slate-400">{i.category}</td>
                     <td className="py-3 px-4 font-mono text-slate-400">{i.unitOfMeasure}</td>
-                    {/* Indicador visual de Apenas Consulta conforme especificação e limitações da API */}
                     <td className="py-3 px-4 text-center">
                       <span className="text-slate-500 font-mono text-[10px] bg-slate-950/40 px-2 py-1 rounded-md border border-slate-800/40 select-none">
                         Apenas Consulta
@@ -295,15 +297,15 @@ export default function CadastrosClientesPage() {
         </div>
       </div>
 
-      {/* MODAL MULTI-PROPÓSITO */}
+      {/* MODAL MULTI-PROPÓSITO RESPONSIVO */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
+          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto scrollbar-thin">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h2 className="text-base font-bold text-white uppercase tracking-wider font-mono">
-                {editingId ? '📝 Editar Registro' : '✨ Novo Cadastro'} - {activeTab}
+              <h2 className="text-sm sm:text-base font-bold text-white uppercase tracking-wider font-mono truncate mr-2">
+                {editingId ? '📝 Editar' : '✨ Novo'} - {activeTab}
               </h2>
-              <button onClick={fecharModal} className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-400"><X className="h-4 w-4" /></button>
+              <button type="button" onClick={fecharModal} className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-400"><X className="h-4 w-4" /></button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 text-left">
@@ -318,7 +320,7 @@ export default function CadastrosClientesPage() {
                     <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">CNPJ / CPF *</label>
                     <input type="text" required value={clientDoc} onChange={e => setClientDoc(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500" />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">Cidade *</label>
                       <input type="text" required value={clientCity} onChange={e => setClientCity(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500" />
@@ -328,7 +330,7 @@ export default function CadastrosClientesPage() {
                       <input type="text" required maxLength={2} value={clientState} onChange={e => setClientState(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500" />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">E-mail Comercial</label>
                       <input type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="exemplo@empresa.com" className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500" />

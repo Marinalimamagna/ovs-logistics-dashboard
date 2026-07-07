@@ -45,7 +45,7 @@ export default function OrdensPage() {
   };
 
   return (
-    <div className="space-y-6 w-full relative">
+    <div className="space-y-6 w-full relative p-4 md:p-0 pb-16 md:pb-0">
       {/* Alerta de Erro de Transição */}
       {errorMsg && (
         <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl flex items-start justify-between text-sm animate-in fade-in duration-200 z-50">
@@ -59,13 +59,13 @@ export default function OrdensPage() {
         </div>
       )}
 
-      {/* Cabeçalho */}
-      <div className="flex items-center justify-between w-full">
+      {/* Cabeçalho Responsivo */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">📦 Gestão de Ordens de Venda</h1>
           <p className="text-slate-400 text-sm mt-1">Monitorização, controle e emissão activa de ordens comerciais.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
           <button 
             onClick={() => refetch()} 
             disabled={isLoading || isFetching} 
@@ -75,7 +75,7 @@ export default function OrdensPage() {
           </button>
           <button 
             onClick={() => setIsModalOpen(true)} 
-            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 px-4 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-emerald-500/10 transition"
+            className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 px-4 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-emerald-500/10 transition flex-1 sm:flex-none"
           >
             <Plus className="h-4 w-4 stroke-[3]" />
             Nova Ordem
@@ -106,8 +106,10 @@ export default function OrdensPage() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start w-full">
           <div className={`${selectedOrder ? 'lg:col-span-2' : 'lg:col-span-3'} bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl w-full transition-all`}>
-            <div className="overflow-x-auto w-full">
-              <table className="w-full text-left border-collapse">
+            
+            {/* ADICIONADA PROTEÇÃO DE SCROLL HORIZONTAL AQUI */}
+            <div className="overflow-x-auto w-full scrollbar-thin scrollbar-thumb-slate-800">
+              <table className="w-full text-left border-collapse min-w-[750px]">
                 <thead>
                   <tr className="bg-slate-950/60 border-b border-slate-800 text-slate-400 font-mono text-xs uppercase tracking-wider">
                     <th className="py-4 px-6 font-medium">ID Ordem</th>
@@ -156,11 +158,12 @@ export default function OrdensPage() {
                 </tbody>
               </table>
             </div>
+
           </div>
 
           {/* Painel Lateral de Controle Operacional */}
           {selectedOrder && (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6 animate-in slide-in-from-right duration-200">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6 animate-in slide-in-from-right duration-200 w-full">
               <div className="flex items-center justify-between border-b border-slate-800 pb-4">
                 <div>
                   <span className="text-xs font-mono text-emerald-400 font-bold">{selectedOrder.id}</span>
@@ -212,6 +215,7 @@ export default function OrdensPage() {
                 <span className="text-slate-500 block text-xs uppercase font-mono">Controle Operacional</span>
                 {getNextStatusLabel(selectedOrder.status) ? (
                   <button
+                    type="button"
                     onClick={() => {
                       const next = getNextStatusLabel(selectedOrder.status);
                       if (next) updateStatusMutation.mutate({ id: selectedOrder.id, nextStatus: next });

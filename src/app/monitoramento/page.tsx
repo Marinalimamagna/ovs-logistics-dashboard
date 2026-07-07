@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -65,17 +66,18 @@ export default function MonitoramentoPage() {
   };
 
   return (
-    <div className="space-y-6 w-full">
-      {/* Cabeçalho */}
-      <div className="flex items-center justify-between w-full">
+    <div className="space-y-6 w-full p-4 md:p-0 pb-16 md:pb-0">
+      {/* Cabeçalho Responsivo */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">📊 Monitoramento Operacional</h1>
           <p className="text-slate-400 text-sm mt-1">Consulta avançada de cargas e ordens com filtros direcionados.</p>
         </div>
         <button 
+          type="button"
           onClick={() => refetch()} 
           disabled={isLoading || isFetching} 
-          className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 border border-slate-700 transition font-mono text-xs"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 border border-slate-700 transition font-mono text-xs w-full sm:w-auto"
         >
           <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
           Sincronizar
@@ -144,7 +146,7 @@ export default function MonitoramentoPage() {
             </select>
           </div>
 
-          {/* Filtro 4: Data de Entrega com Abertura Automática do Calendário */}
+          {/* Filtro 4: Data de Entrega */}
           <div>
             <label className="flex items-center gap-1.5 text-xs font-mono text-slate-400 uppercase mb-1.5">
               <Calendar className="h-3.5 w-3.5 text-amber-400" /> Data Prevista
@@ -153,7 +155,7 @@ export default function MonitoramentoPage() {
               type="date"
               value={filterDate}
               onChange={(e) => setFilterDate(e.target.value)}
-              onClick={(e) => (e.target as HTMLInputElement).showPicker?.()} // Abre o calendário ao clicar na caixa
+              onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition cursor-pointer"
             />
           </div>
@@ -163,6 +165,7 @@ export default function MonitoramentoPage() {
         {(filterStatus || filterClientId || filterTransport || filterDate) && (
           <div className="flex justify-end pt-2">
             <button
+              type="button"
               onClick={handleClearFilters}
               className="text-xs text-red-400 hover:text-red-300 font-mono underline transition"
             >
@@ -172,7 +175,7 @@ export default function MonitoramentoPage() {
         )}
       </div>
 
-      {/* Resultados da Tabela Monitorada */}
+      {/* Resultados da Tabela Monitorada com Proteção Mobile */}
       {isLoading ? (
         <div className="border border-slate-800 bg-slate-900/50 rounded-2xl p-12 text-center flex flex-col items-center justify-center space-y-3">
           <div className="h-7 w-7 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
@@ -180,8 +183,8 @@ export default function MonitoramentoPage() {
         </div>
       ) : (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-          <div className="overflow-x-auto w-full">
-            <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto w-full scrollbar-thin scrollbar-thumb-slate-800">
+            <table className="w-full text-left border-collapse min-w-[750px]">
               <thead>
                 <tr className="bg-slate-950/60 border-b border-slate-800 text-slate-400 font-mono text-xs uppercase tracking-wider">
                   <th className="py-4 px-6 font-medium">ID Ordem</th>

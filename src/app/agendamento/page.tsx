@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiService } from '../../services/api';
 import { Calendar, CheckCircle2, RefreshCw, ArrowLeftRight } from 'lucide-react';
+import { toast } from 'sonner';
 
 const JANELAS_ATENDIMENTO = [
   { id: 'M1', label: 'Manhã 1 (08:00 - 10:00)', vagas: 3, horario: '08:00 - 10:00' },
@@ -17,7 +18,6 @@ export default function AgendamentoPage() {
   const [selectedOrderId, setSelectedOrderId] = useState<string>('');
   const [inputDate, setInputDate] = useState<string>('');
   const [selectedJanela, setSelectedJanela] = useState<string>('');
-  const [sucessoMsg, setSucessoMsg] = useState<string | null>(null);
 
   const { data: orders, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['sales-orders'],
@@ -30,21 +30,22 @@ export default function AgendamentoPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sales-orders'] });
-      setSucessoMsg('Agendamento confirmed com sucesso no sistema!');
+      
+      toast.success('Agendamento confirmado com sucesso no sistema!');
       
       setSelectedOrderId('');
       setInputDate('');
       setSelectedJanela('');
-      setTimeout(() => setSucessoMsg(null), 4000);
     },
+    onError: () => {
+      toast.error('Erro ao realizar o agendamento. Tente novamente.');
+    }
   });
 
-  // REGRA ATUALIZADA: Permite que ordens finalizadas permaneçam visíveis no histórico da tabela
   const ordensElegiveis = orders?.filter(o => 
     ['CRIADA', 'PENDENTE', 'PLANEJADA', 'AGENDADA', 'ENTREGUE', 'CONCLUIDA'].includes(o.status.toUpperCase())
   ) || [];
 
-  // FILTRO DO FORMULÁRIO: Impede que ordens já finalizadas apareçam no Select para re-agendamento
   const ordensParaAgendar = ordensElegiveis.filter(o => 
     !['ENTREGUE', 'CONCLUIDA'].includes(o.status.toUpperCase())
   );
@@ -67,9 +68,9 @@ export default function AgendamentoPage() {
   };
 
   return (
-    <div className="space-y-6 w-full">
+    <div className="space-y-6 w-full px-4 md:px-0">
       {/* Cabeçalho */}
-      <div className="flex items-center justify-between w-full">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">🗓️ Central de Agendamento</h1>
           <p className="text-slate-400 text-sm mt-1">Definição de janelas de entrega, confirmações e reagendamentos de cargas.</p>
@@ -77,20 +78,12 @@ export default function AgendamentoPage() {
         <button 
           onClick={() => refetch()} 
           disabled={isLoading || isFetching} 
-          className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 border border-slate-700 transition font-mono text-xs"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 border border-slate-700 transition font-mono text-xs w-full sm:w-auto"
         >
           <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
           Sincronizar
         </button>
       </div>
-
-      {/* Alerta de Sucesso */}
-      {sucessoMsg && (
-        <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-4 rounded-xl flex items-center gap-2 text-sm animate-in fade-in duration-200">
-          <CheckCircle2 className="h-5 w-5 shrink-0" />
-          <p className="font-medium">{sucessoMsg}</p>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start w-full">
         
@@ -199,7 +192,7 @@ export default function AgendamentoPage() {
 
         {/* Listagem Informativa de Monitoramento */}
         <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-          <div className="p-4 bg-slate-950/40 border-b border-slate-800 flex items-center justify-between">
+          <div className="p-4 bg-slate-950/40 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">Status de Entrega das Ordens Ativas</span>
             <div className="flex items-center gap-4 text-[10px] font-mono">
               <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-400"></span> Entregue</span>
@@ -208,8 +201,8 @@ export default function AgendamentoPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto w-full">
-            <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto w-full scrollbar-thin scrollbar-thumb-slate-800">
+            <table className="w-full text-left border-collapse min-w-[600px]">
               <thead>
                 <tr className="bg-slate-950/20 border-b border-slate-800 text-slate-400 font-mono text-xs uppercase tracking-wider">
                   <th className="py-3 px-4 font-medium">ID Ordem</th>
@@ -226,7 +219,6 @@ export default function AgendamentoPage() {
                   </tr>
                 ) : ordensElegiveis.length > 0 ? (
                   ordensElegiveis.map((o) => {
-                    // RESOLUÇÃO DO RETRO-MAPEAMENTO DE JANELAS AQUI:
                     const rawWindow = (o as any).deliveryWindow || (o as any).horario || (o as any).window || '';
                     let displayWindow = rawWindow;
                     
