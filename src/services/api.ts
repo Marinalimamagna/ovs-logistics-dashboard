@@ -36,6 +36,25 @@ export interface AuditLog {
   nextState: string;      // Estado posterior (JSON string)
 }
 
+// === FUNÇÕES HELPERS PARA PERSISTÊNCIA NO LOCALSTORAGE ===
+const LOCAL_STORAGE_KEY = 'logix_senior_orders';
+
+const getStoredOrders = (): SalesOrder[] => {
+  if (typeof window === 'undefined') return mockOrders;
+  const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+  if (!stored) {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mockOrders));
+    return mockOrders;
+  }
+  return JSON.parse(stored);
+};
+
+const saveStoredOrders = (orders: SalesOrder[]) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(orders));
+  }
+};
+
 // === BANCO DE DADOS MOCK PARA NOVAS ENTIDADES ===
 const mockTransportTypes: TransportType[] = [
   { id: 'TRA-001', name: 'Rodoviário (Carreta Graneleira)', capacity: '32 TON', active: true },
@@ -49,10 +68,8 @@ const mockItems: Item[] = [
   { id: 'ITEM-003', name: 'Perfil U Estrutural Dobrado', category: 'Estruturas', unitOfMeasure: 'KG' },
 ];
 
-// Repositório global em memória para armazenar o histórico de auditoria
 const mockAuditLogs: AuditLog[] = [];
 
-// Helper para registrar logs de auditoria clonando estados de forma segura
 const registerAudit = (
   actionType: AuditLog['actionType'],
   entityAffected: AuditLog['entityAffected'],
@@ -74,25 +91,28 @@ const registerAudit = (
 };
 
 export const apiService = {
-  // === ORDENS DE VENDA / AGENDAMENTO ===
+  // === ORDENS DE VENDA / AGENDAMENTO COM PERSISTÊNCIA TOTAL ===
   getOrders: async (): Promise<SalesOrder[]> => {
     await new Promise((resolve) => setTimeout(resolve, 100));
-    return [...mockOrders];
+    return getStoredOrders();
   },
 
   getOrderById: async (id: string): Promise<SalesOrder> => {
     await new Promise((resolve) => setTimeout(resolve, 50));
-    const order = mockOrders.find((o) => o.id === id);
+    const currentOrders = getStoredOrders();
+    const order = currentOrders.find((o) => o.id === id);
     if (!order) throw new Error('Ordem de venda não encontrada.');
     return { ...order };
   },
 
-  // 🔴 REQUISITO EVENTO 1 DE 4: Criação de Ordem de Venda
+  // 🔴 REQUISITO EVENTO 1 DE 4: Criação de Ordem de Venda Persistida
   createOrder: async (
     orderData: Omit<SalesOrder, 'id' | 'status' | 'totalValue'> & { clientId?: string; totalValue?: number; items?: any[] }
   ): Promise<SalesOrder> => {
     await new Promise((resolve) => setTimeout(resolve, 200));
-    const nextId = `OV-${String(mockOrders.length + 1).padStart(3, '0')}`;
+    const currentOrders = getStoredOrders();
+    
+    const nextId = `OV-${String(currentOrders.length + 1).padStart(3, '0')}`;
     const newOrder: SalesOrder = {
       ...orderData,
       id: nextId,
@@ -105,30 +125,32 @@ export const apiService = {
       newOrder.clientId = `CLI-${String(mockClients.length + 1).padStart(3, '0')}`;
     }
     
-    mockOrders.push(newOrder);
+    currentOrders.push(newOrder);
+    saveStoredOrders(currentOrders); // Salva no LocalStorage de forma definitiva
+    
     registerAudit('CREATE', 'sales_order', newOrder.id, null, newOrder);
     return newOrder;
   },
 
-  // 🔴 REQUISITO EVENTOS 2 E 3 DE 4: Alteração de Status Operacional e Agendamentos
+  // 🔴 REQUISITO EVENTOS 2 E 3 DE 4: Alteração de Status Operacional e Agendamentos Persistidos
   updateOrderStatus: async (id: string, status: any, deliveryDate?: string, deliveryWindow?: string): Promise<SalesOrder> => {
     await new Promise((resolve) => setTimeout(resolve, 150));
-    const orderIndex = mockOrders.findIndex((o) => o.id === id);
+    const currentOrders = getStoredOrders();
+    const orderIndex = currentOrders.findIndex((o) => o.id === id);
     if (orderIndex === -1) throw new Error('Ordem de venda não encontrada.');
 
-    // 1. Captura o estado imutável anterior completo
-    const previousStateCopy = JSON.parse(JSON.stringify(mockOrders[orderIndex]));
+    const previousStateCopy = JSON.parse(JSON.stringify(currentOrders[orderIndex]));
 
-    // 2. Aplica as novas mutações de forma direta e preserva os campos existentes caso venham nulos
     if (status !== undefined && status !== null) {
-      mockOrders[orderIndex].status = status;
+      currentOrders[orderIndex].status = status;
     }
-    if (deliveryDate !== undefined) mockOrders[orderIndex].deliveryDate = deliveryDate;
-    if (deliveryWindow !== undefined) mockOrders[orderIndex].deliveryWindow = deliveryWindow;
+    if (deliveryDate !== undefined) currentOrders[orderIndex].deliveryDate = deliveryDate;
+    if (deliveryWindow !== undefined) currentOrders[orderIndex].deliveryWindow = deliveryWindow;
 
-    const updatedOrder = { ...mockOrders[orderIndex] };
+    const updatedOrder = { ...currentOrders[orderIndex] };
+    
+    saveStoredOrders(currentOrders); // Atualiza no LocalStorage antes da resposta
 
-    // 3. Discrimina dinamicamente a auditoria com base no gatilho que disparou a chamada
     if (deliveryDate || deliveryWindow) {
       registerAudit('UPDATE', 'appointment', id, previousStateCopy, updatedOrder);
     } else {
@@ -201,7 +223,6 @@ export const apiService = {
     return newTransport;
   },
 
-  // 🔴 REQUISITO EVENTO 4 DE 4: Alteração de Transporte
   updateTransportType: async (id: string, data: Omit<TransportType, 'id'>): Promise<TransportType> => {
     await new Promise((resolve) => setTimeout(resolve, 100));
     const idx = mockTransportTypes.findIndex((t) => t.id === id);
@@ -230,7 +251,6 @@ export const apiService = {
     return newItem;
   },
 
-  // === EXPORTAÇÃO COMPLEMENTAR DO HISTÓRICO DE LOGS ===
   getAuditLogs: async (): Promise<AuditLog[]> => {
     return [...mockAuditLogs];
   }
