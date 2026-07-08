@@ -11,7 +11,7 @@ export type SalesOrder = {
   transportType?: string;
   driverName?: string;
   vehiclePlate?: string;
-  deliveryWindow?: string; // Adicionado para suportar a janela do agendamento
+  deliveryWindow?: string;
 };
 
 export type Client = {
@@ -113,7 +113,6 @@ export const apiService = {
     return saveToStorage<SalesOrder>(KEYS.ORDERS, list, order);
   },
 
-  // FUNÇÃO ATUALIZADA QUE RESOLVE O PROBLEMA DO BUILD DO AGENDAMENTO
   updateOrderStatus: async (id: string, status: SalesOrder['status'], dataEntrega?: string, janelaTexto?: string) => {
     const list = await getFromStorage<SalesOrder>(KEYS.ORDERS, INITIAL_ORDERS);
     const index = list.findIndex(o => o.id === id);

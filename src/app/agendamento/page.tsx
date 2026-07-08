@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiService } from '../../services/api';
+import { apiService, SalesOrder } from '../../services/api';
 import { Calendar, CheckCircle2, RefreshCw, ArrowLeftRight } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -19,26 +19,18 @@ export default function AgendamentoPage() {
   const [inputDate, setInputDate] = useState<string>('');
   const [selectedJanela, setSelectedJanela] = useState<string>('');
 
-  const { data: orders, isLoading, refetch, isFetching } = useQuery({
+  const { data: orders, isLoading, refetch, isFetching } = useQuery<SalesOrder[]>({
     queryKey: ['sales-orders'],
     queryFn: apiService.getOrders,
   });
 
   const agendarMutation = useMutation({
     mutationFn: async ({ id, dataEntrega, janelaTexto }: { id: string; dataEntrega: string; janelaTexto: string }) => {
-      // Evita quebra de tipo caso o service ainda não esteja tipado localmente
-      if (typeof (apiService as any).updateOrderStatus === 'function') {
-        return await (apiService as any).updateOrderStatus(id, 'AGENDADA', dataEntrega, janelaTexto);
-      }
-      // Fallback seguro de mock caso o método não exista no arquivo api.ts
-      console.warn("apiService.updateOrderStatus não encontrado no arquivo de serviços. Usando fallback.");
-      return { success: true };
+      return await apiService.updateOrderStatus(id, 'AGENDADA', dataEntrega, janelaTexto);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sales-orders'] });
-      
       toast.success('Agendamento confirmado com sucesso no sistema!');
-      
       setSelectedOrderId('');
       setInputDate('');
       setSelectedJanela('');
@@ -75,7 +67,6 @@ export default function AgendamentoPage() {
 
   return (
     <div className="space-y-6 w-full px-4 md:px-0 text-slate-100">
-      {/* Cabeçalho */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">🗓️ Central de Agendamento</h1>
@@ -93,8 +84,6 @@ export default function AgendamentoPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start w-full">
-        
-        {/* Painel de Formulação */}
         <div className="lg:col-span-1 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
           <div className="flex items-center gap-2 text-xs font-mono text-slate-400 border-b border-slate-800 pb-3">
             <Calendar className="h-4 w-4 text-emerald-400" />
@@ -197,7 +186,6 @@ export default function AgendamentoPage() {
           </form>
         </div>
 
-        {/* Listagem Informativa de Monitoramento */}
         <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
           <div className="p-4 bg-slate-950/40 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">Status de Entrega das Ordens Ativas</span>
@@ -226,7 +214,7 @@ export default function AgendamentoPage() {
                   </tr>
                 ) : ordensElegiveis.length > 0 ? (
                   ordensElegiveis.map((o, idx) => {
-                    const rawWindow = (o as any).deliveryWindow || (o as any).horario || (o as any).window || '';
+                    const rawWindow = o.deliveryWindow || (o as any).horario || (o as any).window || '';
                     let displayWindow = rawWindow;
                     
                     if (typeof rawWindow === 'string') {
@@ -286,7 +274,6 @@ export default function AgendamentoPage() {
             </table>
           </div>
         </div>
-
       </div>
     </div>
   );
