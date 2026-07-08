@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+// Importação corrigida com caminho relativo para evitar erros de build
 import { apiService, SalesOrder } from '../../services/api';
+import { CreateOrderModal } from '../../components/CreateOrderModal'; 
 import { 
   Plus, RefreshCw, Eye, Edit2, Copy, Printer, 
   ArrowUpDown, AlertCircle, ChevronRight, X, CheckCircle2,
-  Inbox, Archive
+  Inbox, Archive, ChevronLeft
 } from 'lucide-react';
 
 type SortKeys = 'id' | 'clientName' | 'deliveryDate' | 'totalValue' | 'status';
@@ -17,23 +19,51 @@ export default function GestaoOVGsPage() {
   const [loading, setLoading] = useState(true);
   const [sortKey, setSortKey] = useState<SortKeys>('id');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
-  const [activeTab, setActiveTab] = useState<TabType>('andamento'); // Aba padrão
+  const [activeTab, setActiveTab] = useState<TabType>('andamento'); 
   
-  // Controle de estados dos painéis laterais (Drawers)
+  // ESTADOS DA PAGINAÇÃO
+  const [currentPage, setCurrentPage] = useState(1);
+  const ordersPerPage = 5; 
+
   const [selectedOrder, setSelectedOrder] = useState<SalesOrder | null>(null);
   const [editingOrder, setEditingOrder] = useState<SalesOrder | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false); 
 
   useEffect(() => {
-    loadOrders();
+    // Carregamento inicial da tela
+    initialLoad();
   }, []);
 
-  const loadOrders = async () => {
-    setLoading(true);
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
+
+  // Função apenas para ler o estado atual do localStorage
+  const fetchCurrentOrders = async () => {
     try {
       const data = await apiService.getOrders();
       setOrders(data);
     } catch (error) {
       console.error("Erro ao carregar ordens:", error);
+    }
+  };
+
+  const initialLoad = async () => {
+    setLoading(true);
+    await fetchCurrentOrders();
+    setLoading(false);
+  };
+
+  // FUNÇÃO DO BOTÃO ATUALIZAR: Reseta para as 5 originais e limpa a tela
+  const handleRefreshDatabase = async () => {
+    setLoading(true);
+    try {
+      apiService.resetDatabase(); 
+      const data = await apiService.getOrders();
+      setOrders(data);
+      setCurrentPage(1); 
+    } catch (error) {
+      console.error("Erro ao resetar base de dados:", error);
     } finally {
       setLoading(false);
     }
@@ -117,13 +147,14 @@ export default function GestaoOVGsPage() {
     setSortKey(key);
   };
 
-  // FILTRAGEM BASEADA NA ABA ATIVA
+  // 1. FILTRAGEM
   const filteredOrders = orders.filter(order => {
     if (activeTab === 'andamento') return order.status !== 'ENTREGUE';
     if (activeTab === 'entregues') return order.status === 'ENTREGUE';
-    return true; // Aba 'todas'
+    return true; 
   });
 
+  // 2. ORDENAÇÃO
   const sortedOrders = [...filteredOrders].sort((a, b) => {
     const valueA = a[sortKey] ?? '';
     const valueB = b[sortKey] ?? '';
@@ -136,7 +167,13 @@ export default function GestaoOVGsPage() {
       : String(valueB).localeCompare(String(valueA));
   });
 
-  const totalOrders = sortedOrders.length;
+  // 3. PAGINAÇÃO
+  const totalOrdersInTab = sortedOrders.length;
+  const totalPages = Math.ceil(totalOrdersInTab / ordersPerPage) || 1;
+  const indexOfLastOrder = currentPage * ordersPerPage;
+  const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
+  const paginatedOrders = sortedOrders.slice(indexOfFirstOrder, indexOfLastOrder);
+
   const totalFinancialValue = sortedOrders.reduce((acc, order) => acc + (order.totalValue || 0), 0);
 
   const getPriorityBadge = (id: string) => {
@@ -168,18 +205,25 @@ export default function GestaoOVGsPage() {
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <button 
-            onClick={loadOrders}
+            type="button"
+            onClick={handleRefreshDatabase}
             className="p-2.5 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-xl transition-colors text-slate-400 hover:text-white active:scale-95"
+            title="Resetar para base limpa"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
-          <button className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl transition-all active:scale-95 shadow-[0_4px_20px_rgba(16,185,129,0.2)]">
+          
+          <button 
+            type="button"
+            onClick={() => setIsCreateModalOpen(true)}
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl transition-all active:scale-95 shadow-[0_4px_20px_rgba(16,185,129,0.2)]"
+          >
             <Plus className="h-4 w-4 stroke-[3]" /> Nova Ordem
           </button>
         </div>
       </div>
 
-      {/* SISTEMA DE ABAS PARA LIMPAR A TELA */}
+      {/* ABAS */}
       <div className="flex border-b border-slate-800 gap-2 text-xs font-mono">
         <button 
           onClick={() => setActiveTab('andamento')}
@@ -213,9 +257,9 @@ export default function GestaoOVGsPage() {
         </button>
       </div>
 
-      {/* ESTÁGIOS */}
+      {/* FLUXO ATIVO */}
       {activeTab === 'andamento' && (
-        <div className="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-4 flex items-center gap-2 overflow-x-auto text-[10px] font-mono tracking-wider uppercase text-slate-500 scrollbar-none snap-x animate-fadeIn">
+        <div className="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-4 flex items-center gap-2 overflow-x-auto text-[10px] font-mono tracking-wider uppercase text-slate-500 scrollbar-none snap-x">
           <span className="text-slate-400 font-bold shrink-0 mr-2">Fluxo Ativo:</span>
           <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-1 rounded-md font-bold">Criada</span>
           <ChevronRight className="h-3 w-3 shrink-0" />
@@ -227,9 +271,82 @@ export default function GestaoOVGsPage() {
         </div>
       )}
 
-      {/* TABELA PRINCIPAL */}
+      {/* CONTAINER DE TABELA PRINCIPAL / CARDS MOBILE */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
-        <div className="overflow-x-auto w-full">
+        
+        {/* 1. LAYOUT MOBILE (CARDS RESPONSIVOS) */}
+        <div className="block md:hidden divide-y divide-slate-800/60">
+          {loading ? (
+            <div className="p-8 text-center text-slate-500 font-mono text-xs uppercase">Processando malha...</div>
+          ) : paginatedOrders.length === 0 ? (
+            <div className="p-8 text-center text-slate-500 font-mono text-xs uppercase">Nenhuma ordem encontrada.</div>
+          ) : (
+            paginatedOrders.map((order, idx) => (
+              <div 
+                key={`card-${order.id}-${idx}`} 
+                onClick={() => setSelectedOrder(order)}
+                className="p-4 space-y-3 bg-slate-900/40 active:bg-slate-800/60 transition text-xs"
+              >
+                <div className="flex justify-between items-center">
+                  <span className="font-mono font-bold text-emerald-400 text-sm">
+                    {order.id.replace('OV-', 'OT-')}
+                  </span>
+                  <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black border
+                    ${order.status === 'CRIADA' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : ''}
+                    ${order.status === 'PLANEJADA' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : ''}
+                    ${order.status === 'AGENDADA' ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' : ''}
+                    ${order.status === 'EM TRANSPORTE' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : ''}
+                    ${order.status === 'ENTREGUE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : ''}
+                  `}>
+                    {order.status}
+                  </span>
+                </div>
+
+                <div>
+                  <div className="text-[10px] text-slate-400 uppercase tracking-wider font-mono">Cliente</div>
+                  <div className="font-bold text-white text-sm">{order.clientName}</div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <div>
+                    <div className="text-[10px] text-slate-500 uppercase font-mono">Valor Total</div>
+                    <div className="font-mono font-bold text-slate-200">
+                      {order.totalValue?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-slate-500 uppercase font-mono">Entrega</div>
+                    <div className="font-mono text-slate-300">
+                      {order.deliveryDate ? order.deliveryDate.split('-').reverse().join('/') : '---'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800/40" onClick={(e) => e.stopPropagation()}>
+                  <button onClick={() => setSelectedOrder(order)} className="p-2 bg-slate-950 rounded-lg text-slate-400 hover:text-white">
+                    <Eye className="h-4 w-4" />
+                  </button>
+                  <button 
+                    onClick={() => order.status !== 'ENTREGUE' && setEditingOrder(order)}
+                    disabled={order.status === 'ENTREGUE'}
+                    className="p-2 bg-slate-950 rounded-lg text-slate-400 disabled:opacity-25"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </button>
+                  <button onClick={() => handleDuplicate(order.id)} className="p-2 bg-slate-950 rounded-lg text-slate-400">
+                    <Copy className="h-4 w-4" />
+                  </button>
+                  <button onClick={() => handlePrint(order)} className="p-2 bg-slate-950 rounded-lg text-slate-400">
+                    <Printer className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* 2. LAYOUT DESKTOP (TABELA TRADICIONAL) */}
+        <div className="hidden md:block overflow-x-auto w-full">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-800 bg-slate-950/40 text-[10px] font-mono tracking-widest text-slate-400 uppercase select-none">
@@ -240,30 +357,30 @@ export default function GestaoOVGsPage() {
                 <th onClick={() => handleSort('clientName')} className="p-4 cursor-pointer hover:text-white transition-colors">
                   <div className="flex items-center gap-1.5">Cliente <ArrowUpDown className="h-3 w-3 text-slate-500" /></div>
                 </th>
-                <th onClick={() => handleSort('deliveryDate')} className="p-4 cursor-pointer hover:text-white transition-colors hidden md:table-cell">
+                <th onClick={() => handleSort('deliveryDate')} className="p-4 cursor-pointer hover:text-white transition-colors">
                   <div className="flex items-center gap-1.5">Data Entrega <ArrowUpDown className="h-3 w-3 text-slate-500" /></div>
                 </th>
-                <th className="p-4 hidden sm:table-cell">Documentação</th>
+                <th className="p-4">Documentação</th>
                 <th onClick={() => handleSort('totalValue')} className="p-4 text-right cursor-pointer hover:text-white transition-colors">
                   <div className="flex items-center justify-end gap-1.5">Valor Total <ArrowUpDown className="h-3 w-3 text-slate-500" /></div>
                 </th>
-                <th onClick={() => handleSort('status')} className="p-4 text-center cursor-pointer hover:text-white transition-colors hidden sm:table-cell">
+                <th onClick={() => handleSort('status')} className="p-4 text-center cursor-pointer hover:text-white transition-colors">
                   <div className="flex items-center justify-center gap-1.5">Status <ArrowUpDown className="h-3 w-3 text-slate-500" /></div>
                 </th>
                 <th className="p-4 text-center">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 text-xs md:text-sm">
+            <tbody className="divide-y divide-slate-800/60 text-sm">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="p-12 text-center text-slate-500 font-mono text-xs uppercase">Processando malha logística...</td>
+                  <td colSpan={8} className="p-12 text-center text-slate-500 font-mono text-xs uppercase">Processando malha...</td>
                 </tr>
-              ) : sortedOrders.length === 0 ? (
+              ) : paginatedOrders.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="p-12 text-center text-slate-500 font-mono text-xs uppercase">Nenhuma ordem nesta categoria.</td>
                 </tr>
               ) : (
-                sortedOrders.map((order, idx) => {
+                paginatedOrders.map((order, idx) => {
                   const isEntregue = order.status === 'ENTREGUE';
                   return (
                     <tr 
@@ -275,17 +392,17 @@ export default function GestaoOVGsPage() {
                         {order.id.replace('OV-', 'OT-')}
                       </td>
                       <td className="p-4">{getPriorityBadge(order.id)}</td>
-                      <td className="p-4 font-semibold text-white max-w-[140px] md:max-w-none truncate">
+                      <td className="p-4 font-semibold text-white">
                         {order.clientName}
                       </td>
-                      <td className="p-4 font-mono text-xs text-slate-300 hidden md:table-cell">
+                      <td className="p-4 font-mono text-xs text-slate-300">
                         {order.deliveryDate ? order.deliveryDate.split('-').reverse().join('/') : '---'}
                       </td>
-                      <td className="p-4 hidden sm:table-cell">{getDocStatusBadge(order.id)}</td>
+                      <td className="p-4">{getDocStatusBadge(order.id)}</td>
                       <td className="p-4 text-right font-mono font-bold text-white">
                         {order.totalValue?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                       </td>
-                      <td className="p-4 text-center hidden sm:table-cell">
+                      <td className="p-4 text-center">
                         <span className={`inline-block px-3 py-1 rounded-full text-[11px] font-black border min-w-[120px] text-center
                           ${order.status === 'CRIADA' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : ''}
                           ${order.status === 'PLANEJADA' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : ''}
@@ -296,39 +413,22 @@ export default function GestaoOVGsPage() {
                           {order.status}
                         </span>
                       </td>
-
                       <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-center gap-1">
-                          <button 
-                            onClick={() => setSelectedOrder(order)} 
-                            className="p-1.5 hover:bg-slate-800 rounded-md text-slate-400 hover:text-white"
-                          >
+                          <button onClick={() => setSelectedOrder(order)} className="p-1.5 hover:bg-slate-800 rounded-md text-slate-400 hover:text-white">
                             <Eye className="h-3.5 w-3.5" />
                           </button>
-                          
                           <button 
                             onClick={() => !isEntregue && setEditingOrder(order)}
                             disabled={isEntregue}
-                            title={isEntregue ? "Ordens entregues não podem ser alteradas" : "Editar Ordem"}
-                            className={`p-1.5 rounded-md text-slate-400 transition-all ${
-                              isEntregue 
-                                ? 'opacity-25 cursor-not-allowed bg-transparent' 
-                                : 'hover:bg-slate-800 hover:text-sky-400'
-                            }`}
+                            className={`p-1.5 rounded-md text-slate-400 transition-all ${isEntregue ? 'opacity-25 cursor-not-allowed' : 'hover:bg-slate-800 hover:text-sky-400'}`}
                           >
                             <Edit2 className="h-3.5 w-3.5" />
                           </button>
-
-                          <button 
-                            onClick={() => handleDuplicate(order.id)}
-                            className="p-1.5 hover:bg-slate-800 rounded-md text-slate-400 hover:text-purple-400 active:scale-90"
-                          >
+                          <button onClick={() => handleDuplicate(order.id)} className="p-1.5 hover:bg-slate-800 rounded-md text-slate-400 hover:text-purple-400">
                             <Copy className="h-3.5 w-3.5" />
                           </button>
-                          <button 
-                            onClick={() => handlePrint(order)}
-                            className="p-1.5 hover:bg-slate-800 rounded-md text-slate-400 hover:text-emerald-400"
-                          >
+                          <button onClick={() => handlePrint(order)} className="p-1.5 hover:bg-slate-800 rounded-md text-slate-400 hover:text-emerald-400">
                             <Printer className="h-3.5 w-3.5" />
                           </button>
                         </div>
@@ -341,19 +441,44 @@ export default function GestaoOVGsPage() {
           </table>
         </div>
 
-        {/* MÉTRICAS */}
-        <div className="bg-slate-950/60 border-t border-slate-800 px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs font-mono text-slate-400">
-          <div>Volume na Aba: <span className="text-white font-bold">{totalOrders} OTs</span></div>
-          <div>Faturamento da Visão: <span className="text-emerald-400 font-extrabold text-sm">{totalFinancialValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
+        {/* FOOTER COM CONTROLES DE PAGINAÇÃO */}
+        <div className="bg-slate-950/60 border-t border-slate-800 px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs font-mono text-slate-400">
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-6 w-full sm:w-auto text-center sm:text-left">
+            <div>Volume na Aba: <span className="text-white font-bold">{totalOrdersInTab} OTs</span></div>
+            <div className="hidden sm:block">|</div>
+            <div>Faturamento da Visão: <span className="text-emerald-400 font-extrabold text-sm">{totalFinancialValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
+          </div>
+          
+          {totalPages > 1 && (
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                className="p-2 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-slate-900 transition text-slate-200"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span className="text-[11px] text-slate-300">
+                Página <span className="text-white font-bold">{currentPage}</span> de <span className="text-white font-bold">{totalPages}</span>
+              </span>
+              <button
+                type="button"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                className="p-2 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-slate-900 transition text-slate-200"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* GAVETA: DETALHES (OLHO) */}
+      {/* DETALHES DA ORDEM */}
       {selectedOrder && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex justify-end" onClick={() => setSelectedOrder(null)}>
           <div className="w-full sm:max-w-xl bg-[#0b1329] h-full border-l border-slate-800/60 p-6 flex flex-col overflow-y-auto" onClick={e => e.stopPropagation()}>
-            
-            {/* Cabeçalho da Gaveta */}
             <div className="flex justify-between items-start border-b border-slate-800/40 pb-4">
               <div>
                 <span className="text-xs font-mono text-emerald-400 font-bold tracking-wider">
@@ -366,21 +491,17 @@ export default function GestaoOVGsPage() {
               </button>
             </div>
             
-            {/* Conteúdo */}
-            <div className="mt-6 space-y-6 flex-1">
-              
-              {/* Banner de Status Concluído */}
+            <div className="mt-6 space-y-6 flex-1 text-xs">
               {selectedOrder.status === 'ENTREGUE' && (
-                <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-4 py-3 rounded-xl flex items-center gap-2.5 text-xs font-medium">
+                <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-4 py-3 rounded-xl flex items-center gap-2.5 font-medium">
                   <CheckCircle2 className="h-4 w-4 shrink-0" />
                   <span>Esta ordem de transporte foi finalizada e arquivada com sucesso.</span>
                 </div>
               )}
 
-              {/* Bloco de Dados da Operação */}
               <div>
                 <h3 className="text-[10px] font-mono uppercase tracking-widest text-slate-500 mb-2">Dados da Operação</h3>
-                <div className="grid grid-cols-2 gap-y-4 gap-x-4 bg-slate-950/40 p-5 rounded-xl border border-slate-850/60 text-xs">
+                <div className="grid grid-cols-2 gap-y-4 gap-x-4 bg-slate-950/40 p-5 rounded-xl border border-slate-850/60">
                   <div>
                     <span className="text-slate-500 block mb-0.5 uppercase tracking-wider text-[10px]">Tipo Transporte</span>
                     <span className="text-slate-200 font-bold text-sm">{selectedOrder.transportType || '---'}</span>
@@ -401,74 +522,12 @@ export default function GestaoOVGsPage() {
                   </div>
                 </div>
               </div>
-
-              {/* Bloco de Detalhes do Encerramento (Visível apenas se estiver Entregue) */}
-              {selectedOrder.status === 'ENTREGUE' && (
-                <div>
-                  <h3 className="text-[10px] font-mono uppercase tracking-widest text-slate-500 mb-2">Informações de Recebimento</h3>
-                  <div className="grid grid-cols-2 gap-y-4 gap-x-4 bg-emerald-950/10 p-5 rounded-xl border border-emerald-900/20 text-xs">
-                    <div>
-                      <span className="text-slate-500 block mb-0.5 uppercase tracking-wider text-[10px]">Data de Entrega</span>
-                      <span className="text-emerald-400 font-mono font-bold text-sm">
-                        {selectedOrder.deliveryDate ? selectedOrder.deliveryDate.split('-').reverse().join('/') : '---'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block mb-0.5 uppercase tracking-wider text-[10px]">Recebedor (Canhoto)</span>
-                      <span className="text-slate-200 font-bold text-sm">Portaria / Conferido</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Histórico de Alterações (Timeline) */}
-              <div>
-                <h3 className="text-[10px] font-mono uppercase tracking-widest text-slate-500 mb-3">Histórico de Alterações</h3>
-                <div className="space-y-4 relative before:absolute before:inset-y-1 before:left-1.5 before:w-0.5 before:bg-slate-800">
-                  
-                  {/* Evento 1: Marco Final de Entrega */}
-                  {selectedOrder.status === 'ENTREGUE' && (
-                    <div className="flex gap-4 relative items-start text-xs">
-                      <div className="w-3 h-3 rounded-full bg-emerald-500 border-4 border-[#0b1329] z-10 mt-1 shrink-0"></div>
-                      <div>
-                        <span className="text-[10px] font-mono text-slate-500 block">
-                          {selectedOrder.deliveryDate ? selectedOrder.deliveryDate.split('-').reverse().join('/') : '08/07/2026'} às 14:30 // Motorista
-                        </span>
-                        <p className="text-slate-200 font-medium">
-                          Status alterado para <span className="text-emerald-400 font-bold">ENTREGUE</span>
-                        </p>
-                        <p className="text-slate-400 text-[11px] mt-0.5">Canhoto digitalizado e viagem finalizada pelo app do condutor.</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Evento 2: Planejamento */}
-                  <div className="flex gap-4 relative items-start text-xs">
-                    <div className="w-3 h-3 rounded-full bg-blue-500 border-4 border-[#0b1329] z-10 mt-1 shrink-0"></div>
-                    <div>
-                      <span className="text-[10px] font-mono text-slate-500 block">08/07/2026 às 09:42 // Operador</span>
-                      <p className="text-slate-200 font-medium">Ordem atualizada e pronta para expedição</p>
-                    </div>
-                  </div>
-
-                  {/* Evento 3: Criação */}
-                  <div className="flex gap-4 relative items-start text-xs">
-                    <div className="w-3 h-3 rounded-full bg-slate-700 border-4 border-[#0b1329] z-10 mt-1 shrink-0"></div>
-                    <div>
-                      <span className="text-[10px] font-mono text-slate-500 block">08/07/2026 às 08:00 // Sistema Integrador</span>
-                      <p className="text-slate-400">Ordem de venda criada e sincronizada com banco comercial.</p>
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-
             </div>
           </div>
         </div>
       )}
 
-      {/* GAVETA: EDIÇÃO (LÁPIS) */}
+      {/* FORMULÁRIO DE EDIÇÃO */}
       {editingOrder && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex justify-end" onClick={() => setEditingOrder(null)}>
           <form 
@@ -492,8 +551,7 @@ export default function GestaoOVGsPage() {
                 <select 
                   value={editingOrder.status}
                   onChange={e => setEditingOrder({...editingOrder, status: e.target.value as any})}
-                  className="w-full p-3.5 bg-slate-950 border border-slate-800/80 rounded-xl text-white focus:border-sky-500 outline-none font-medium transition-colors appearance-none"
-                  style={{ backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 14px center', backgroundSize: '16px' }}
+                  className="w-full p-3.5 bg-slate-950 border border-slate-800/80 rounded-xl text-white focus:border-sky-500 outline-none font-medium transition-colors"
                 >
                   <option value="CRIADA">CRIADA</option>
                   <option value="PLANEJADA">PLANEJADA</option>
@@ -543,7 +601,7 @@ export default function GestaoOVGsPage() {
                   type="date" 
                   value={editingOrder.deliveryDate || ''} 
                   onChange={e => setEditingOrder({...editingOrder, deliveryDate: e.target.value})}
-                  className="w-full p-3.5 bg-slate-950 border border-slate-800/80 rounded-xl text-white focus:border-sky-500 outline-none font-mono font-medium transition-colors text-left"
+                  className="w-full p-3.5 bg-slate-950 border border-slate-800/80 rounded-xl text-white focus:border-sky-500 outline-none font-mono font-medium transition-colors"
                 />
               </div>
             </div>
@@ -552,7 +610,7 @@ export default function GestaoOVGsPage() {
               <button type="button" onClick={() => setEditingOrder(null)} className="flex-1 py-3.5 bg-slate-950/60 hover:bg-slate-950 border border-slate-800/60 rounded-xl text-slate-400 hover:text-white transition-colors uppercase font-bold tracking-wider text-[11px]">
                 Cancelar
               </button>
-              <button type="submit" className="flex-1 py-3.5 bg-sky-500 hover:bg-sky-600 text-slate-950 rounded-xl transition-all uppercase font-black tracking-wider text-[11px] shadow-[0_4px_20px_rgba(14,165,233,0.15)]">
+              <button type="submit" className="flex-1 py-3.5 bg-sky-500 hover:bg-sky-600 text-slate-950 rounded-xl transition-all uppercase font-black tracking-wider text-[11px]">
                 Salvar Alterações
               </button>
             </div>
@@ -560,6 +618,14 @@ export default function GestaoOVGsPage() {
         </div>
       )}
 
+      {/* MODAL DE CRIAÇÃO */}
+      <CreateOrderModal 
+        isOpen={isCreateModalOpen} 
+        onClose={async () => {
+          setIsCreateModalOpen(false);
+          await fetchCurrentOrders();
+        }} 
+      />
     </div>
   );
 }

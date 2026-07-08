@@ -26,7 +26,17 @@ export default function AgendamentoPage() {
 
   const agendarMutation = useMutation({
     mutationFn: async ({ id, dataEntrega, janelaTexto }: { id: string; dataEntrega: string; janelaTexto: string }) => {
-      return await apiService.updateOrderStatus(id, 'AGENDADA', dataEntrega, janelaTexto);
+      // Buscamos a ordem original para não perder os outros dados dela
+      const ordemOriginal = orders?.find(o => o.id === id);
+      
+      // Adaptado para usar 'saveOrder', que está disponível e mapeado no seu apiService
+      return await apiService.saveOrder({
+        ...ordemOriginal,
+        id,
+        status: 'AGENDADA',
+        deliveryDate: dataEntrega,
+        deliveryWindow: janelaTexto,
+      } as SalesOrder);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sales-orders'] });

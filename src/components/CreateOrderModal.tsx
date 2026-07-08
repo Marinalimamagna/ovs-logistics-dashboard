@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiService } from '../services/api';
-import { X, Calendar } from 'lucide-react';
+import { apiService, SalesOrder } from '../services/api';
+import { X } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface CreateOrderModalProps {
   isOpen: boolean;
@@ -16,17 +17,23 @@ export function CreateOrderModal({ isOpen, onClose }: CreateOrderModalProps) {
   const [transportType, setTransportType] = useState('Não definido');
   const [totalValue, setTotalValue] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('');
+  const [quantity, setQuantity] = useState('1'); // Novo estado para a quantidade
 
-  const createOrderMutation = useMutation<any, Error, any>({
-    mutationFn: apiService.createOrder,
+  const createOrderMutation = useMutation<any, Error, Partial<SalesOrder>>({
+    mutationFn: apiService.saveOrder,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sales-orders'] });
+      toast.success('Ordem de venda criada com sucesso!');
       setClientName('');
       setTransportType('Não definido');
       setTotalValue('');
       setDeliveryDate('');
+      setQuantity('1');
       onClose();
     },
+    onError: () => {
+      toast.error('Erro ao salvar a nova ordem.');
+    }
   });
 
   if (!isOpen) return null;
@@ -40,8 +47,13 @@ export function CreateOrderModal({ isOpen, onClose }: CreateOrderModalProps) {
       transportType,
       totalValue: Number(totalValue) || 0,
       deliveryDate,
-      items: [{ sku: 'SKU-000', name: 'Item Geral Padrão Vinculado', quantity: 1 }]
-    } as any);
+      status: 'CRIADA', 
+      items: [{ 
+        sku: 'SKU-000', 
+        name: 'Item Geral Padrão Vinculado', 
+        quantity: Number(quantity) || 1 // Quantidade dinâmica vinda do formulário
+      }]
+    });
   };
 
   return (
@@ -62,6 +74,7 @@ export function CreateOrderModal({ isOpen, onClose }: CreateOrderModalProps) {
 
         {/* Formulário */}
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Nome do Cliente */}
           <div>
             <label className="block text-xs font-mono text-slate-400 uppercase mb-1.5">Nome do Cliente *</label>
             <input
@@ -74,6 +87,7 @@ export function CreateOrderModal({ isOpen, onClose }: CreateOrderModalProps) {
             />
           </div>
 
+          {/* Tipo de Transporte & Quantidade */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-mono text-slate-400 uppercase mb-1.5">Tipo de Transporte</label>
@@ -90,6 +104,21 @@ export function CreateOrderModal({ isOpen, onClose }: CreateOrderModalProps) {
             </div>
 
             <div>
+              <label className="block text-xs font-mono text-slate-400 uppercase mb-1.5">Quantidade *</label>
+              <input
+                type="number"
+                min="1"
+                required
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition"
+              />
+            </div>
+          </div>
+
+          {/* Valor Comercial & Previsão de Entrega */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
               <label className="block text-xs font-mono text-slate-400 uppercase mb-1.5">Valor Comercial (R$)</label>
               <input
                 type="number"
@@ -100,19 +129,18 @@ export function CreateOrderModal({ isOpen, onClose }: CreateOrderModalProps) {
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition"
               />
             </div>
-          </div>
 
-          <div>
-            <label className="block text-xs font-mono text-slate-400 uppercase mb-1.5">Previsão de Entrega</label>
-            <div className="relative flex items-center">
-              <input
-                type="date"
-                value={deliveryDate}
-                onChange={(e) => setDeliveryDate(e.target.value)}
-                onClick={(e) => (e.target as HTMLInputElement).showPicker()}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-3 pr-10 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition text-left scheme-dark cursor-pointer"
-              />
-              <Calendar className="absolute right-3 h-4 w-4 text-slate-400 pointer-events-none" />
+            <div>
+              <label className="block text-xs font-mono text-slate-400 uppercase mb-1.5">Previsão de Entrega</label>
+              <div className="relative flex items-center">
+                <input
+                  type="date"
+                  value={deliveryDate}
+                  onChange={(e) => setDeliveryDate(e.target.value)}
+                  onClick={(e) => (e.target as HTMLInputElement).showPicker()}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition text-left scheme-dark cursor-pointer"
+                />
+              </div>
             </div>
           </div>
 
