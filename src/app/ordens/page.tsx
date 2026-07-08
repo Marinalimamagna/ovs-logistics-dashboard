@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-// Importação corrigida com caminho relativo para evitar erros de build
 import { apiService, SalesOrder } from '../../services/api';
 import { CreateOrderModal } from '../../components/CreateOrderModal'; 
 import { 
@@ -21,16 +20,15 @@ export default function GestaoOVGsPage() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [activeTab, setActiveTab] = useState<TabType>('andamento'); 
   
-  // ESTADOS DA PAGINAÇÃO
+  // ESTADOS DA PAGINAÇÃO (Alterado para 3 itens por página para facilitar testes)
   const [currentPage, setCurrentPage] = useState(1);
-  const ordersPerPage = 5; 
+  const ordersPerPage = 3; 
 
   const [selectedOrder, setSelectedOrder] = useState<SalesOrder | null>(null);
   const [editingOrder, setEditingOrder] = useState<SalesOrder | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false); 
 
   useEffect(() => {
-    // Carregamento inicial da tela
     initialLoad();
   }, []);
 
@@ -38,7 +36,6 @@ export default function GestaoOVGsPage() {
     setCurrentPage(1);
   }, [activeTab]);
 
-  // Função apenas para ler o estado atual do localStorage
   const fetchCurrentOrders = async () => {
     try {
       const data = await apiService.getOrders();
@@ -54,7 +51,6 @@ export default function GestaoOVGsPage() {
     setLoading(false);
   };
 
-  // FUNÇÃO DO BOTÃO ATUALIZAR: Reseta para as 5 originais e limpa a tela
   const handleRefreshDatabase = async () => {
     setLoading(true);
     try {
@@ -167,7 +163,7 @@ export default function GestaoOVGsPage() {
       : String(valueB).localeCompare(String(valueA));
   });
 
-  // 3. PAGINAÇÃO
+  // 3. LOGICA DA PAGINAÇÃO
   const totalOrdersInTab = sortedOrders.length;
   const totalPages = Math.ceil(totalOrdersInTab / ordersPerPage) || 1;
   const indexOfLastOrder = currentPage * ordersPerPage;
@@ -285,7 +281,7 @@ export default function GestaoOVGsPage() {
               <div 
                 key={`card-${order.id}-${idx}`} 
                 onClick={() => setSelectedOrder(order)}
-                className="p-4 space-y-3 bg-slate-900/40 active:bg-slate-800/60 transition text-xs"
+                className="p-4 space-y-3 bg-slate-900/40 active:bg-slate-800/60 transition text-xs cursor-pointer"
               >
                 <div className="flex justify-between items-center">
                   <span className="font-mono font-bold text-emerald-400 text-sm">
@@ -441,7 +437,7 @@ export default function GestaoOVGsPage() {
           </table>
         </div>
 
-        {/* FOOTER COM CONTROLES DE PAGINAÇÃO */}
+        {/* FOOTER DA TABELA COM CONTROLES DE PAGINAÇÃO (SEMPRE VISÍVEL AGORA) */}
         <div className="bg-slate-950/60 border-t border-slate-800 px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs font-mono text-slate-400">
           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-6 w-full sm:w-auto text-center sm:text-left">
             <div>Volume na Aba: <span className="text-white font-bold">{totalOrdersInTab} OTs</span></div>
@@ -449,29 +445,27 @@ export default function GestaoOVGsPage() {
             <div>Faturamento da Visão: <span className="text-emerald-400 font-extrabold text-sm">{totalFinancialValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
           </div>
           
-          {totalPages > 1 && (
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                className="p-2 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-slate-900 transition text-slate-200"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <span className="text-[11px] text-slate-300">
-                Página <span className="text-white font-bold">{currentPage}</span> de <span className="text-white font-bold">{totalPages}</span>
-              </span>
-              <button
-                type="button"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                className="p-2 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-slate-900 transition text-slate-200"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              className="p-2 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-slate-900 transition text-slate-200"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <span className="text-[11px] text-slate-300">
+              Página <span className="text-white font-bold">{currentPage}</span> de <span className="text-white font-bold">{totalPages}</span>
+            </span>
+            <button
+              type="button"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              className="p-2 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-slate-900 transition text-slate-200"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -490,7 +484,7 @@ export default function GestaoOVGsPage() {
                 <X className="h-4 w-4" />
               </button>
             </div>
-            
+
             <div className="mt-6 space-y-6 flex-1 text-xs">
               {selectedOrder.status === 'ENTREGUE' && (
                 <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-4 py-3 rounded-xl flex items-center gap-2.5 font-medium">
