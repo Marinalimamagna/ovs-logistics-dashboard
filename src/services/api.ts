@@ -44,7 +44,7 @@ export type ItemSKU = {
 };
 
 // ==========================================
-// 2. DADOS INICIAIS MOCKADOS (CORRIGIDO PARA APENAS 5 ORDENS)
+// 2. DADOS INICIAIS MOCKADOS
 // ==========================================
 
 const INITIAL_ORDERS: SalesOrder[] = [
@@ -116,7 +116,7 @@ const INITIAL_TRANSPORT_TYPES: TransportType[] = [
 ];
 
 const INITIAL_ITEMS: ItemSKU[] = [
-  { id: 'SKU-001', name: 'Bobina de Aço Revestido', category: 'Siderurgia', price: 4500.00, unitOfMeasure: 'UN' },
+  { id: 'PRD-001', name: 'Bobina de Aço Revestido', category: 'Siderurgia', price: 4500.00, unitOfMeasure: 'UN' },
   { id: 'SKU-002', name: 'Palete de Carga Geral', category: 'Logística', price: 150.00, unitOfMeasure: 'PCT' },
 ];
 
@@ -127,12 +127,11 @@ const KEYS = {
   ITEMS: 'gestor_ovgs_items',
 };
 
-// FORÇAR LIMPEZA DA MEMÓRIA ANTIGA DO NAVEGADOR LOGO NO CARREGAMENTO
 if (typeof window !== 'undefined') {
-  localStorage.setItem(KEYS.ORDERS, JSON.stringify(INITIAL_ORDERS));
-  localStorage.setItem(KEYS.CLIENTS, JSON.stringify(INITIAL_CLIENTS));
-  localStorage.setItem(KEYS.TRANSPORTS, JSON.stringify(INITIAL_TRANSPORT_TYPES));
-  localStorage.setItem(KEYS.ITEMS, JSON.stringify(INITIAL_ITEMS));
+  if (!localStorage.getItem(KEYS.ORDERS)) localStorage.setItem(KEYS.ORDERS, JSON.stringify(INITIAL_ORDERS));
+  if (!localStorage.getItem(KEYS.CLIENTS)) localStorage.setItem(KEYS.CLIENTS, JSON.stringify(INITIAL_CLIENTS));
+  if (!localStorage.getItem(KEYS.TRANSPORTS)) localStorage.setItem(KEYS.TRANSPORTS, JSON.stringify(INITIAL_TRANSPORT_TYPES));
+  if (!localStorage.getItem(KEYS.ITEMS)) localStorage.setItem(KEYS.ITEMS, JSON.stringify(INITIAL_ITEMS));
 }
 
 async function getFromStorage<T>(key: string, initialData: T[]): Promise<T[]> {
@@ -143,18 +142,6 @@ async function getFromStorage<T>(key: string, initialData: T[]): Promise<T[]> {
     return initialData;
   }
   return JSON.parse(stored);
-}
-
-function saveToStorage<T extends { id: string }>(key: string, currentData: T[], entity: T): T[] {
-  if (typeof window === 'undefined') return currentData;
-  const index = currentData.findIndex(item => item.id === entity.id);
-  if (index !== -1) {
-    currentData[index] = { ...currentData[index], ...entity };
-  } else {
-    currentData.push(entity);
-  }
-  localStorage.setItem(key, JSON.stringify(currentData));
-  return currentData;
 }
 
 // ==========================================
@@ -191,7 +178,15 @@ export const apiService = {
       items: order.items || []
     };
 
-    return saveToStorage<SalesOrder>(KEYS.ORDERS, list, finalOrder);
+    const index = list.findIndex(o => o.id === finalId);
+    if (index !== -1) {
+      list[index] = finalOrder;
+    } else {
+      list.push(finalOrder);
+    }
+    
+    if (typeof window !== 'undefined') localStorage.setItem(KEYS.ORDERS, JSON.stringify(list));
+    return finalOrder;
   },
 
   updateOrderStatus: async (id: string, status: SalesOrder['status'], dataEntrega?: string, JANELA_TEXTO?: string) => {
@@ -232,36 +227,112 @@ export const apiService = {
 
   // --- CLIENTES ---
   getClients: () => getFromStorage<Client>(KEYS.CLIENTS, INITIAL_CLIENTS),
-  createClient: async (client: Client) => {
+  
+  createClient: async (client: any) => {
     const list = await getFromStorage<Client>(KEYS.CLIENTS, INITIAL_CLIENTS);
-    return saveToStorage<Client>(KEYS.CLIENTS, list, client);
+    
+    const nextNum = list.length > 0 
+      ? Math.max(...list.map(c => parseInt(c.id.replace('CLI-', '')) || 0)) + 1 
+      : 1;
+    const finalId = `CLI-${String(nextNum).padStart(3, '0')}`;
+
+    const finalClient: Client = {
+      id: finalId,
+      name: client.name || '',
+      document: client.document || '',
+      status: 'ATIVO',
+      city: client.city || '—',
+      state: client.state || '—',
+      email: client.email || '',
+      phone: client.phone || ''
+    };
+
+    list.push(finalClient);
+    if (typeof window !== 'undefined') localStorage.setItem(KEYS.CLIENTS, JSON.stringify(list));
+    return finalClient;
   },
-  updateClient: async (first: any, second?: any) => {
-    const clientData = second ? { ...second, id: first } : first;
+  
+  updateClient: async (id: string, payload: any) => {
     const list = await getFromStorage<Client>(KEYS.CLIENTS, INITIAL_CLIENTS);
-    return saveToStorage<Client>(KEYS.CLIENTS, list, clientData);
+    const index = list.findIndex(c => c.id === id);
+    if (index === -1) return null;
+
+    list[index] = {
+      ...list[index],
+      ...payload,
+      id
+    };
+
+    if (typeof window !== 'undefined') localStorage.setItem(KEYS.CLIENTS, JSON.stringify(list));
+    return list[index];
   },
 
-  // --- TRANSPORTADORAS ---
+  // --- TRANSPORTADORAS / VEÍCULOS ---
   getTransportTypes: () => getFromStorage<TransportType>(KEYS.TRANSPORTS, INITIAL_TRANSPORT_TYPES),
-  createTransportType: async (transport: TransportType) => {
+  
+  createTransportType: async (transport: any) => {
     const list = await getFromStorage<TransportType>(KEYS.TRANSPORTS, INITIAL_TRANSPORT_TYPES);
-    return saveToStorage<TransportType>(KEYS.TRANSPORTS, list, transport);
+    
+    const nextNum = list.length > 0 
+      ? Math.max(...list.map(t => parseInt(t.id.replace('TRA-', '')) || 0)) + 1 
+      : 1;
+    const finalId = `TRA-${String(nextNum).padStart(3, '0')}`;
+
+    const capRaw = transport.capacity || '';
+    const formattedCapacity = capRaw.toLowerCase().includes('tonela') || capRaw === '' ? capRaw : `${capRaw} Toneladas`;
+
+    const finalTransport: TransportType = {
+      id: finalId,
+      name: transport.name || '',
+      capacity: formattedCapacity || '—',
+      status: 'HOMOLOGADO',
+      active: transport.active !== undefined ? transport.active : true
+    };
+
+    list.push(finalTransport);
+    if (typeof window !== 'undefined') localStorage.setItem(KEYS.TRANSPORTS, JSON.stringify(list));
+    return finalTransport;
   },
-  updateTransportType: async (first: any, second?: any) => {
-    const transportData = second ? { ...second, id: first } : first;
+  
+  updateTransportType: async (id: string, payload: any) => {
     const list = await getFromStorage<TransportType>(KEYS.TRANSPORTS, INITIAL_TRANSPORT_TYPES);
-    return saveToStorage<TransportType>(KEYS.TRANSPORTS, list, transportData);
+    const index = list.findIndex(t => t.id === id);
+    if (index === -1) return null;
+
+    list[index] = {
+      ...list[index],
+      ...payload,
+      id
+    };
+
+    if (typeof window !== 'undefined') localStorage.setItem(KEYS.TRANSPORTS, JSON.stringify(list));
+    return list[index];
   },
 
   // --- ITENS / SKU ---
   getItems: () => getFromStorage<ItemSKU>(KEYS.ITEMS, INITIAL_ITEMS),
-  createItem: async (item: ItemSKU) => {
+  
+  createItem: async (item: any) => {
     const list = await getFromStorage<ItemSKU>(KEYS.ITEMS, INITIAL_ITEMS);
-    return saveToStorage<ItemSKU>(KEYS.ITEMS, list, item);
+    
+    const nextNum = list.length > 0 
+      ? Math.max(...list.map(i => parseInt(i.id.replace('PRD-', '').replace('SKU-', '')) || 0)) + 1 
+      : 1;
+    const finalId = `PRD-${String(nextNum).padStart(3, '0')}`;
+
+    const finalItem: ItemSKU = {
+      id: finalId,
+      name: item.name || '',
+      category: item.category || 'Geral',
+      price: item.price || 0,
+      unitOfMeasure: item.unitOfMeasure || 'UN'
+    };
+
+    list.push(finalItem);
+    if (typeof window !== 'undefined') localStorage.setItem(KEYS.ITEMS, JSON.stringify(list));
+    return finalItem;
   },
 
-  // --- RESET GLOBAL DE BASE LOCAL ---
   resetDatabase: () => {
     if (typeof window !== 'undefined') {
       localStorage.setItem(KEYS.ORDERS, JSON.stringify(INITIAL_ORDERS));

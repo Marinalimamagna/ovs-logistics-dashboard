@@ -126,16 +126,24 @@ export default function GestaoOVGsPage() {
   };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingOrder) return;
-    try {
-      const listAtualizada = await apiService.saveOrder(editingOrder);
-      setOrders(listAtualizada);
-      setEditingOrder(null); 
-    } catch (error) {
-      console.error("Erro ao salvar ordem:", error);
-    }
-  };
+  e.preventDefault();
+  if (!editingOrder) return;
+
+  try {
+    // 1. Envia a ordem editada para o serviço da API
+    const ordemSalva = await apiService.saveOrder(editingOrder);
+
+    // 2. Atualiza o estado local substituindo o item antigo pelo atualizado dentro do array
+    setOrders((ordensAnteriores) =>
+      ordensAnteriores.map((o) => (o.id === ordemSalva.id ? ordemSalva : o))
+    );
+
+    // 3. Limpa o estado de edição para fechar o modal/form
+    setEditingOrder(null);
+  } catch (error) {
+    console.error("Erro ao salvar ordem:", error);
+  }
+};
 
   const handleSort = (key: SortKeys) => {
     const isAsc = sortKey === key && sortOrder === 'asc';
