@@ -9,7 +9,7 @@ export function Sidebar() {
 
   const menuItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Ordens de Venda', href: '/ordens', icon: ShoppingCart },
+    { name: 'Gestão de OVGs', href: '/ordens', icon: ShoppingCart }, // Alterado para manter consistência profissional
     { name: 'Monitoramento', href: '/monitoramento', icon: Activity },
     { name: 'Agendamentos', href: '/agendamento', icon: Calendar },
     { name: 'Cadastros Básicos', href: '/cadastros', icon: Layers },

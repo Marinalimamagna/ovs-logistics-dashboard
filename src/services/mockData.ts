@@ -10,6 +10,9 @@ export interface SalesOrder {
   status: string; // Tipo genérico para evitar conflitos com o fluxo sequencial de strings do frontend
   deliveryDate?: string;
   deliveryWindow?: string;
+  driverName?: string;  // 🚀 Novo campo operacional para Motorista
+  vehiclePlate?: string; // 🚀 Novo campo operacional para Placa do Veículo
+  deletedAt?: string;    // 🚀 Suporte para exclusão lógica da OVG
   items?: any[]; // Suporte crucial para renderizar a listagem e o painel de detalhes da ordem
 }
 
@@ -32,6 +35,8 @@ export const mockOrders: SalesOrder[] = [
     status: 'PLANEJADA',
     deliveryDate: '2026-07-13',
     deliveryWindow: 'MANHA',
+    driverName: 'Carlos Silva',
+    vehiclePlate: 'ABC-1234',
     items: []
   },
   { 
@@ -45,6 +50,8 @@ export const mockOrders: SalesOrder[] = [
     status: 'PENDENTE',
     deliveryDate: '2026-07-14',
     deliveryWindow: 'TARDE',
+    driverName: 'Marcos Souza',
+    vehiclePlate: 'XYZ-5678',
     items: []
   }
 ];

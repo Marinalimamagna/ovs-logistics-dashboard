@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { apiService } from '../../services/api';
+import { apiService, SalesOrder } from '../../services/api';
 import { AnalyticsCharts } from '../../components/AnalyticsCharts';
 import { 
   DollarSign, 
@@ -23,8 +23,8 @@ export default function DashboardPage() {
 
   const totalOrdens = orders?.length || 0;
 
-  const faturamentoTotal = orders?.reduce((acc, order: any) => {
-    const valorReal = order.value ?? order.totalValue ?? 0;
+  const faturamentoTotal = orders?.reduce((acc, order: SalesOrder) => {
+    const valorReal = order.totalValue ?? 0;
     return acc + (Number(valorReal) || 0);
   }, 0) || 0;
 
@@ -87,7 +87,7 @@ export default function DashboardPage() {
         {/* Card 2: Ticket Médio */}
         <div className="bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 md:p-6 shadow-sm relative overflow-hidden group">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Ticket Médio / OV</span>
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Ticket Médio / OVG</span>
             <div className="p-2.5 bg-teal-500/10 rounded-xl text-teal-400 border border-teal-500/10">
               <BarChart3 className="h-5 w-5" />
             </div>
@@ -120,7 +120,7 @@ export default function DashboardPage() {
               {isLoading ? (
                 <span className="inline-block w-16 h-7 bg-slate-800 animate-pulse rounded"></span>
               ) : (
-                `${totalOrdens} OVs`
+                `${totalOrdens} OVGs`
               )}
             </h3>
             <div className="flex items-center gap-1.5 mt-2">
@@ -200,16 +200,18 @@ export default function DashboardPage() {
             ) : ultimasOrdens.length === 0 ? (
               <p className="text-xs text-slate-500 text-center py-6">Nenhum registro recente.</p>
             ) : (
-              ultimasOrdens.map((order: any, idx: number) => {
-                const val = order.value ?? order.totalValue ?? 0;
+              ultimasOrdens.map((order: SalesOrder, idx: number) => {
+                const val = order.totalValue ?? 0;
                 return (
                   <div key={order.id || idx} className="bg-slate-950/40 border border-slate-800/40 rounded-xl p-3 flex flex-col justify-between hover:border-slate-800 transition">
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-slate-200 font-semibold">{order.id || `OV-00${totalOrdens - idx}`}</span>
-                      <span className="text-slate-500 text-[10px]">{order.date || 'Hoje'}</span>
+                      <span className="text-slate-200 font-semibold">
+                        {order.id ? order.id.replace('OV-', 'OVG-') : `OVG-00${totalOrdens - idx}`}
+                      </span>
+                      <span className="text-slate-500 text-[10px]">{order.deliveryDate ? order.deliveryDate.split('-').reverse().join('/') : 'Hoje'}</span>
                     </div>
                     <p className="text-xs text-slate-400 truncate mt-1">{order.clientName || 'Cliente Geral'}</p>
-                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-900/60">
+                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-teal-950/20">
                       <span className="text-xs text-teal-400 font-semibold">
                         {Number(val).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                       </span>

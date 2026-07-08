@@ -1,257 +1,173 @@
-import { mockOrders, mockClients, SalesOrder } from './mockData';
+// ==========================================
+// 1. DEFINIÇÃO DAS TIPAGENS EXPANDIDAS
+// ==========================================
 
-// === INTERFACES DE ENTIDADES ===
-export interface Client {
+export type SalesOrder = {
+  id: string;
+  clientName: string;
+  deliveryDate?: string;
+  totalValue?: number;
+  status: 'CRIADA' | 'PLANEJADA' | 'AGENDADA' | 'EM TRANSPORTE' | 'ENTREGUE';
+  transportType?: string;
+  driverName?: string;
+  vehiclePlate?: string;
+};
+
+export type Client = {
   id: string;
   name: string;
   document: string;
-  city: string;
-  state: string;
+  status: 'ATIVO' | 'INATIVO';
+  city?: string;
+  state?: string;
   email?: string;
   phone?: string;
-}
+};
 
-export interface TransportType {
+export type TransportType = {
   id: string;
-  name: string;      // Ex: Rodoviário, Ferroviário, Marítimo
-  capacity: string;  // Ex: 40 Toneladas, 15 Toneladas
-  active: boolean;
-}
+  name: string;
+  capacity: string;
+  status: 'HOMOLOGADO' | 'INATIVO';
+  active?: boolean;
+};
 
-export interface Item {
+export type ItemSKU = {
   id: string;
-  name: string;        // Ex: Bobina de Aço, Chapa Galvanizada
-  category: string;    // Ex: Siderurgia, Matéria-Prima
-  unitOfMeasure: string; // Ex: TON, KG, UN
-}
+  name: string;
+  category: string;
+  price: number;
+  unitOfMeasure?: string;
+};
 
-// 📌 REQUISITO IMPERATIVO: Interface Oficial de Logs de Auditoria
-export interface AuditLog {
-  id: string;
-  timestamp: string;      // Data e hora do evento
-  actionType: 'CREATE' | 'UPDATE' | 'STATUS_CHANGE'; // Tipo de ação
-  entityAffected: 'sales_order' | 'appointment' | 'transport_type'; // Entidade afetada
-  entityId: string;       // ID do registro modificado
-  previousState: string | null; // Estado anterior (JSON string)
-  nextState: string;      // Estado posterior (JSON string)
-}
+// ==========================================
+// 2. DADOS INICIAIS MOCKADOS
+// ==========================================
 
-// === FUNÇÕES HELPERS PARA PERSISTÊNCIA NO LOCALSTORAGE ===
-const LOCAL_STORAGE_KEY = 'logix_senior_orders';
+const INITIAL_ORDERS: SalesOrder[] = [
+  { id: 'OVG-001', clientName: 'CD Atacadista Central', deliveryDate: '2026-07-29', totalValue: 8900.00, status: 'AGENDADA', transportType: 'Carreta', driverName: 'Marcos Silva', vehiclePlate: 'ABC-1234' },
+  { id: 'OVG-002', clientName: 'Navegação Atlântico Sul', deliveryDate: '2026-07-07', totalValue: 85.00, status: 'CRIADA', transportType: 'Bi-truck', driverName: 'Carlos Souza', vehiclePlate: 'DEF-5678' },
+  { id: 'OVG-003', clientName: 'Navegação Atlântico Sul', deliveryDate: '2026-07-29', totalValue: 650.00, status: 'AGENDADA', transportType: 'Bi-truck' },
+  { id: 'OVG-004', clientName: 'Transportes Mercosul', deliveryDate: '', totalValue: 170.00, status: 'AGENDADA', transportType: 'Caminhão' },
+  { id: 'OVG-005', clientName: 'Logística Brasil S.A.', deliveryDate: '2026-07-14', totalValue: 2500.00, status: 'EM TRANSPORTE' },
+  { id: 'OVG-006', clientName: 'CD Atacadista Central', deliveryDate: '2026-07-19', totalValue: 4250.00, status: 'PLANEJADA' },
+  { id: 'OVG-007', clientName: 'Navegação Atlântico Sul', deliveryDate: '2026-07-30', totalValue: 8900.00, status: 'ENTREGUE' },
+  { id: 'OVG-008', clientName: 'Siderúrgica Nacional S.A.', deliveryDate: '2026-07-24', totalValue: 6500.00, status: 'ENTREGUE' }
+];
 
-const getStoredOrders = (): SalesOrder[] => {
-  if (typeof window === 'undefined') return mockOrders;
-  const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+const INITIAL_CLIENTS: Client[] = [
+  { id: 'CLI-001', name: 'CD Atacadista Central', document: '12.345.678/0001-99', status: 'ATIVO', city: 'São Paulo', state: 'SP', email: 'contato@central.com', phone: '11999999999' },
+  { id: 'CLI-002', name: 'Navegação Atlântico Sul', document: '98.765.432/0001-88', status: 'ATIVO', city: 'Santos', state: 'SP', email: 'log@atlantico.com', phone: '13988888888' },
+];
+
+const INITIAL_TRANSPORT_TYPES: TransportType[] = [
+  { id: 'TRA-001', name: 'Carreta', capacity: '27 Toneladas', status: 'HOMOLOGADO', active: true },
+  { id: 'TRA-002', name: 'Bi-truck', capacity: '14 Toneladas', status: 'HOMOLOGADO', active: true },
+];
+
+const INITIAL_ITEMS: ItemSKU[] = [
+  { id: 'SKU-001', name: 'Bobina de Aço Revestido', category: 'Siderurgia', price: 4500.00, unitOfMeasure: 'UN' },
+  { id: 'SKU-002', name: 'Palete de Carga Geral', category: 'Logística', price: 150.00, unitOfMeasure: 'PCT' },
+];
+
+const KEYS = {
+  ORDERS: 'gestor_ovgs_orders',
+  CLIENTS: 'gestor_ovgs_clients',
+  TRANSPORTS: 'gestor_ovgs_transports',
+  ITEMS: 'gestor_ovgs_items',
+};
+
+async function getFromStorage<T>(key: string, initialData: T[]): Promise<T[]> {
+  if (typeof window === 'undefined') return initialData;
+  const stored = localStorage.getItem(key);
   if (!stored) {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mockOrders));
-    return mockOrders;
+    localStorage.setItem(key, JSON.stringify(initialData));
+    return initialData;
   }
   return JSON.parse(stored);
-};
+}
 
-const saveStoredOrders = (orders: SalesOrder[]) => {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(orders));
+function saveToStorage<T extends { id: string }>(key: string, currentData: T[], entity: T): T[] {
+  if (typeof window === 'undefined') return currentData;
+  const index = currentData.findIndex(item => item.id === entity.id);
+  if (index !== -1) {
+    currentData[index] = { ...currentData[index], ...entity };
+  } else {
+    currentData.push(entity);
   }
-};
+  localStorage.setItem(key, JSON.stringify(currentData));
+  return currentData;
+}
 
-// === BANCO DE DADOS MOCK PARA NOVAS ENTIDADES ===
-const mockTransportTypes: TransportType[] = [
-  { id: 'TRA-001', name: 'Rodoviário (Carreta Graneleira)', capacity: '32 TON', active: true },
-  { id: 'TRA-002', name: 'Rodoviário (Bitrem)', capacity: '57 TON', active: true },
-  { id: 'TRA-003', name: 'Ferroviário (Vagão Plataforma)', capacity: '70 TON', active: true },
-];
-
-const mockItems: Item[] = [
-  { id: 'ITEM-001', name: 'Bobina de Aço Laminado a Quente', category: 'Siderurgia', unitOfMeasure: 'TON' },
-  { id: 'ITEM-002', name: 'Chapa de Aço Galvanizado 1.2mm', category: 'Siderurgia', unitOfMeasure: 'TON' },
-  { id: 'ITEM-003', name: 'Perfil U Estrutural Dobrado', category: 'Estruturas', unitOfMeasure: 'KG' },
-];
-
-const mockAuditLogs: AuditLog[] = [];
-
-const registerAudit = (
-  actionType: AuditLog['actionType'],
-  entityAffected: AuditLog['entityAffected'],
-  entityId: string,
-  previousState: any,
-  nextState: any
-) => {
-  const newLog: AuditLog = {
-    id: `AUD-${Math.floor(100000 + Math.random() * 900000)}`,
-    timestamp: new Date().toISOString(),
-    actionType,
-    entityAffected,
-    entityId,
-    previousState: previousState ? JSON.stringify(previousState) : null,
-    nextState: JSON.stringify(nextState)
-  };
-  mockAuditLogs.unshift(newLog);
-  console.log(`📡 [AUDITORIA]: Novo evento capturado -> (${actionType}) em ${entityAffected}`, newLog);
-};
+// ==========================================
+// 3. EXPORTAÇÃO DO SERVIÇO UNIFICADO
+// ==========================================
 
 export const apiService = {
-  // === ORDENS DE VENDA / AGENDAMENTO COM PERSISTÊNCIA TOTAL ===
-  getOrders: async (): Promise<SalesOrder[]> => {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    return getStoredOrders();
+  // --- ORDENS DE VENDA (OVGs) ---
+  getOrders: () => getFromStorage<SalesOrder>(KEYS.ORDERS, INITIAL_ORDERS),
+  
+  saveOrder: async (order: SalesOrder) => {
+    const list = await getFromStorage<SalesOrder>(KEYS.ORDERS, INITIAL_ORDERS);
+    return saveToStorage<SalesOrder>(KEYS.ORDERS, list, order);
   },
 
-  getOrderById: async (id: string): Promise<SalesOrder> => {
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    const currentOrders = getStoredOrders();
-    const order = currentOrders.find((o) => o.id === id);
-    if (!order) throw new Error('Ordem de venda não encontrada.');
-    return { ...order };
-  },
-
-  // 🔴 REQUISITO EVENTO 1 DE 4: Criação de Ordem de Venda Persistida
-  createOrder: async (
-    orderData: Omit<SalesOrder, 'id' | 'status' | 'totalValue'> & { clientId?: string; totalValue?: number; items?: any[] }
-  ): Promise<SalesOrder> => {
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    const currentOrders = getStoredOrders();
+  duplicateOrder: async (id: string) => {
+    const list = await getFromStorage<SalesOrder>(KEYS.ORDERS, INITIAL_ORDERS);
+    const original = list.find(o => o.id === id);
+    if (!original) return list;
     
-    const nextId = `OV-${String(currentOrders.length + 1).padStart(3, '0')}`;
-    const newOrder: SalesOrder = {
-      ...orderData,
-      id: nextId,
-      status: 'CRIADA',
-      totalValue: orderData.totalValue || 0,
-      items: orderData.items || []
+    const newId = `OVG-${Math.floor(100 + Math.random() * 900)}`;
+    const duplicated: SalesOrder = {
+      ...original,
+      id: newId,
+      clientName: `${original.clientName} (Cópia)`,
+      status: 'CRIADA'
     };
+    
+    list.push(duplicated);
+    if (typeof window !== 'undefined') localStorage.setItem(KEYS.ORDERS, JSON.stringify(list));
+    return list;
+  },
 
-    if (!newOrder.clientId) {
-      newOrder.clientId = `CLI-${String(mockClients.length + 1).padStart(3, '0')}`;
+  // --- CLIENTES ---
+  getClients: () => getFromStorage<Client>(KEYS.CLIENTS, INITIAL_CLIENTS),
+  createClient: async (client: Client) => {
+    const list = await getFromStorage<Client>(KEYS.CLIENTS, INITIAL_CLIENTS);
+    return saveToStorage<Client>(KEYS.CLIENTS, list, client);
+  },
+  updateClient: async (first: any, second?: any) => {
+    const clientData = second ? { ...second, id: first } : first;
+    const list = await getFromStorage<Client>(KEYS.CLIENTS, INITIAL_CLIENTS);
+    return saveToStorage<Client>(KEYS.CLIENTS, list, clientData);
+  },
+
+  // --- TRANSPORTADORAS ---
+  getTransportTypes: () => getFromStorage<TransportType>(KEYS.TRANSPORTS, INITIAL_TRANSPORT_TYPES),
+  createTransportType: async (transport: TransportType) => {
+    const list = await getFromStorage<TransportType>(KEYS.TRANSPORTS, INITIAL_TRANSPORT_TYPES);
+    return saveToStorage<TransportType>(KEYS.TRANSPORTS, list, transport);
+  },
+  updateTransportType: async (first: any, second?: any) => {
+    const transportData = second ? { ...second, id: first } : first;
+    const list = await getFromStorage<TransportType>(KEYS.TRANSPORTS, INITIAL_TRANSPORT_TYPES);
+    return saveToStorage<TransportType>(KEYS.TRANSPORTS, list, transportData);
+  },
+
+  // --- ITENS / SKU ---
+  getItems: () => getFromStorage<ItemSKU>(KEYS.ITEMS, INITIAL_ITEMS),
+  createItem: async (item: ItemSKU) => {
+    const list = await getFromStorage<ItemSKU>(KEYS.ITEMS, INITIAL_ITEMS);
+    return saveToStorage<ItemSKU>(KEYS.ITEMS, list, item);
+  },
+
+  // --- RESET GLOBAL DE BASE LOCAL ---
+  resetDatabase: () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(KEYS.ORDERS, JSON.stringify(INITIAL_ORDERS));
+      localStorage.setItem(KEYS.CLIENTS, JSON.stringify(INITIAL_CLIENTS));
+      localStorage.setItem(KEYS.TRANSPORTS, JSON.stringify(INITIAL_TRANSPORT_TYPES));
+      localStorage.setItem(KEYS.ITEMS, JSON.stringify(INITIAL_ITEMS));
     }
-    
-    currentOrders.push(newOrder);
-    saveStoredOrders(currentOrders); // Salva no LocalStorage de forma definitiva
-    
-    registerAudit('CREATE', 'sales_order', newOrder.id, null, newOrder);
-    return newOrder;
-  },
-
-  // 🔴 REQUISITO EVENTOS 2 E 3 DE 4: Alteração de Status Operacional e Agendamentos Persistidos
-  updateOrderStatus: async (id: string, status: any, deliveryDate?: string, deliveryWindow?: string): Promise<SalesOrder> => {
-    await new Promise((resolve) => setTimeout(resolve, 150));
-    const currentOrders = getStoredOrders();
-    const orderIndex = currentOrders.findIndex((o) => o.id === id);
-    if (orderIndex === -1) throw new Error('Ordem de venda não encontrada.');
-
-    const previousStateCopy = JSON.parse(JSON.stringify(currentOrders[orderIndex]));
-
-    if (status !== undefined && status !== null) {
-      currentOrders[orderIndex].status = status;
-    }
-    if (deliveryDate !== undefined) currentOrders[orderIndex].deliveryDate = deliveryDate;
-    if (deliveryWindow !== undefined) currentOrders[orderIndex].deliveryWindow = deliveryWindow;
-
-    const updatedOrder = { ...currentOrders[orderIndex] };
-    
-    saveStoredOrders(currentOrders); // Atualiza no LocalStorage antes da resposta
-
-    if (deliveryDate || deliveryWindow) {
-      registerAudit('UPDATE', 'appointment', id, previousStateCopy, updatedOrder);
-    } else {
-      registerAudit('STATUS_CHANGE', 'sales_order', id, previousStateCopy, updatedOrder);
-    }
-
-    return updatedOrder;
-  },
-
-  // === CRUD DE CLIENTES ===
-  getClients: async (): Promise<Client[]> => {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    return mockClients.map((c: any) => ({
-      id: c.id,
-      name: c.name,
-      document: c.document,
-      city: c.city || '',
-      state: c.state || '',
-      email: c.email || '',
-      phone: c.phone || ''
-    }));
-  },
-
-  createClient: async (clientData: Omit<Client, 'id'>): Promise<Client> => {
-    await new Promise((resolve) => setTimeout(resolve, 150));
-    const nextId = `CLI-${String(mockClients.length + 1).padStart(3, '0')}`;
-    
-    const newClient: any = {
-      id: nextId,
-      name: clientData.name,
-      document: clientData.document,
-      city: clientData.city || '',
-      state: clientData.state || ''
-    };
-
-    if (clientData.email) newClient.email = clientData.email;
-    if (clientData.phone) newClient.phone = clientData.phone;
-
-    mockClients.push(newClient);
-    return newClient as Client;
-  },
-
-  updateClient: async (id: string, clientData: Omit<Client, 'id'>): Promise<Client> => {
-    await new Promise((resolve) => setTimeout(resolve, 150));
-    const clientIndex = mockClients.findIndex((c) => c.id === id);
-    if (clientIndex === -1) throw new Error('Cliente não encontrado.');
-
-    mockClients[clientIndex].name = clientData.name;
-    mockClients[clientIndex].document = clientData.document;
-    mockClients[clientIndex].city = clientData.city || '';
-    mockClients[clientIndex].state = clientData.state || '';
-    
-    if (clientData.email) (mockClients[clientIndex] as any).email = clientData.email;
-    if (clientData.phone) (mockClients[clientIndex] as any).phone = clientData.phone;
-
-    return { ...mockClients[clientIndex] } as any as Client;
-  },
-
-  // === CRUD: TIPOS DE TRANSPORTE ===
-  getTransportTypes: async (): Promise<TransportType[]> => {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    return [...mockTransportTypes];
-  },
-
-  createTransportType: async (data: Omit<TransportType, 'id'>): Promise<TransportType> => {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    const nextId = `TRA-${String(mockTransportTypes.length + 1).padStart(3, '0')}`;
-    const newTransport: TransportType = { id: nextId, ...data };
-    mockTransportTypes.push(newTransport);
-    return newTransport;
-  },
-
-  updateTransportType: async (id: string, data: Omit<TransportType, 'id'>): Promise<TransportType> => {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    const idx = mockTransportTypes.findIndex((t) => t.id === id);
-    if (idx === -1) throw new Error('Tipo de transporte não encontrado.');
-
-    const previousStateCopy = JSON.parse(JSON.stringify(mockTransportTypes[idx]));
-
-    mockTransportTypes[idx] = { id, ...data };
-    const updatedTransport = { ...mockTransportTypes[idx] };
-
-    registerAudit('UPDATE', 'transport_type', id, previousStateCopy, updatedTransport);
-    return updatedTransport;
-  },
-
-  // === CRUD: ITENS ===
-  getItems: async (): Promise<Item[]> => {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    return [...mockItems];
-  },
-
-  createItem: async (data: Omit<Item, 'id'>): Promise<Item> => {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    const nextId = `ITEM-${String(mockItems.length + 1).padStart(3, '0')}`;
-    const newItem: Item = { id: nextId, ...data };
-    mockItems.push(newItem);
-    return newItem;
-  },
-
-  getAuditLogs: async (): Promise<AuditLog[]> => {
-    return [...mockAuditLogs];
   }
 };

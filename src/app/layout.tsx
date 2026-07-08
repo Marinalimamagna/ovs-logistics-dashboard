@@ -7,8 +7,9 @@ import { Toaster } from 'sonner';
 
 const inter = Inter({ subsets: ['latin'] });
 
+// 📝 Configuração dos metadados - Alterado de OVs para OVGs aqui:
 export const metadata: Metadata = {
-  title: 'Gestor de OVs - Painel de Controle',
+  title: 'Gestor de OVGs - Painel de Controle',
   description: 'Sistema integrado de monitoramento e ordens de venda',
 };
 

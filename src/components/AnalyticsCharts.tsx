@@ -28,7 +28,7 @@ export function AnalyticsCharts({ orders }: ChartsProps) {
 
   // Paleta de Cores Dinâmicas para as Barras de Clientes / Transportadoras
   const BAR_COLORS = [
-    '#fdba74', // Laranja Pêssego (Sotaque original)
+    '#fdba74', // Laranja Pêssego
     '#38bdf8', // Azul Claro brilhante
     '#5eead4', // Verde-água / Menta
     '#a7f3d0', // Verde Menta Pastel sutil
@@ -75,7 +75,7 @@ export function AnalyticsCharts({ orders }: ChartsProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full text-slate-300">
       
-      {/* Gráfico de Barras - Faturamento por Cliente (Cores Dinâmicas por Barra) */}
+      {/* Gráfico de Barras - Faturamento por Cliente */}
       <div className="lg:col-span-2 bg-[#0d1527] border border-slate-800/60 rounded-2xl p-5 shadow-sm">
         <h3 className="text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-6">
           VOLUME DE FATURAMENTO POR CLIENTE
@@ -92,7 +92,6 @@ export function AnalyticsCharts({ orders }: ChartsProps) {
                 labelStyle={{ color: '#94a3b8' }}
               />
               <Bar dataKey="Faturamento (R$)" radius={[4, 4, 0, 0]} barSize={28}>
-                {/* CORREÇÃO DO SEU PEDIDO: Colorindo cada barra com uma cor diferente da paleta */}
                 {barChartData.map((entry, index) => (
                   <Cell key={`cell-bar-${index}`} fill={BAR_COLORS[index % BAR_COLORS.length]} />
                 ))}
@@ -135,8 +134,9 @@ export function AnalyticsCharts({ orders }: ChartsProps) {
             <span className="text-3xl font-semibold text-white tracking-tight">
               {orders.length}
             </span>
+            {/* 🎯 CORREÇÃO: Alterado de 'Total OVs' para 'Total OVGs' */}
             <span className="text-[9px] text-slate-500 uppercase tracking-wider font-medium">
-              Total OVs
+              Total OVGs
             </span>
           </div>
         </div>

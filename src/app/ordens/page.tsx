@@ -1,391 +1,565 @@
 'use client';
 
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiService } from '../../services/api'; 
-import { X, RefreshCw, ChevronDown } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { apiService, SalesOrder } from '../../services/api';
+import { 
+  Plus, RefreshCw, Eye, Edit2, Copy, Printer, 
+  ArrowUpDown, AlertCircle, ChevronRight, X, CheckCircle2,
+  Inbox, Archive
+} from 'lucide-react';
 
-// ==========================================
-// INTERFACE DO MODAL
-// ==========================================
-interface CreateOrderModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
+type SortKeys = 'id' | 'clientName' | 'deliveryDate' | 'totalValue' | 'status';
+type SortOrder = 'asc' | 'desc';
+type TabType = 'andamento' | 'entregues' | 'todas';
 
-// ==========================================
-// COMPONENTE DO MODAL
-// ==========================================
-export function CreateOrderModal({ isOpen, onClose }: CreateOrderModalProps) {
-  const queryClient = useQueryClient();
+export default function GestaoOVGsPage() {
+  const [orders, setOrders] = useState<SalesOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [sortKey, setSortKey] = useState<SortKeys>('id');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+  const [activeTab, setActiveTab] = useState<TabType>('andamento'); // Aba padrão
   
-  const [clientName, setClientName] = useState('');
-  const [transportType, setTransportType] = useState('Caminhão'); 
-  const [totalValue, setTotalValue] = useState('');
-  const [quantity, setQuantity] = useState('1'); 
-  const [deliveryDate, setDeliveryDate] = useState('');
+  // Controle de estados dos painéis laterais (Drawers)
+  const [selectedOrder, setSelectedOrder] = useState<SalesOrder | null>(null);
+  const [editingOrder, setEditingOrder] = useState<SalesOrder | null>(null);
 
-  const createOrderMutation = useMutation({
-    mutationFn: (newOrder: any) => apiService.createOrder(newOrder),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sales-orders'] });
-      setClientName('');
-      setTransportType('Caminhão');
-      setTotalValue('');
-      setQuantity('1');
-      setDeliveryDate('');
-      onClose();
-    },
-  });
+  useEffect(() => {
+    loadOrders();
+  }, []);
 
-  if (!isOpen) return null;
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!clientName.trim() || !totalValue || !deliveryDate) return;
-
-    createOrderMutation.mutate({
-      clientName,
-      transportType,
-      totalValue: Number(totalValue),
-      deliveryDate,
-      status: 'CRIADA',
-      items: [
-        {
-          name: 'Item Geral Padrão',
-          quantity: Number(quantity) || 1,
-        }
-      ]
-    });
-  };
-
-  return (
-    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <style dangerouslySetInnerHTML={{__html: `
-        input[type="date"]::-webkit-calendar-picker-indicator {
-          background: transparent;
-          bottom: 0;
-          color: transparent;
-          cursor: pointer;
-          height: auto;
-          left: 0;
-          position: absolute;
-          right: 0;
-          top: 0;
-          width: auto;
-        }
-      `}} />
-
-      <div className="bg-[#0b1324] border border-slate-800 rounded-2xl w-full max-w-md p-5 md:p-6 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-800/60 pb-4 mb-5">
-          <h2 className="text-sm md:text-base font-bold text-white flex items-center gap-2">
-            ✨ Emitir Nova Ordem de Venda
-          </h2>
-          <button 
-            type="button"
-            onClick={onClose} 
-            className="p-1.5 bg-slate-900 hover:bg-slate-800 rounded-lg text-slate-400 transition border border-slate-800/50 cursor-pointer"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs font-mono">
-          <div className="space-y-1.5">
-            <label className="text-slate-400 font-medium uppercase tracking-wider block text-[10px]">
-              Nome do Cliente *
-            </label>
-            <input 
-              type="text"
-              required
-              value={clientName}
-              onChange={(e) => setClientName(e.target.value)}
-              placeholder="Ex: CD Atacadista Central"
-              className="w-full bg-[#070b14] border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500/50 transition font-sans text-sm"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-slate-400 font-medium uppercase tracking-wider block text-[10px]">
-                Tipo de Transporte
-              </label>
-              <div className="relative">
-                <select 
-                  value={transportType}
-                  onChange={(e) => setTransportType(e.target.value)}
-                  className="w-full bg-[#070b14] border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500/50 transition font-sans text-sm cursor-pointer appearance-none"
-                >
-                  <option value="Caminhão">Caminhão</option>
-                  <option value="Carreta">Carreta</option>
-                  <option value="Bi-truck">Bi-truck</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
-                  <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-slate-400 font-medium uppercase tracking-wider block text-[10px]">
-                Quantidade (Itens)
-              </label>
-              <input 
-                type="number"
-                min="1"
-                required
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                className="w-full bg-[#070b14] border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500/50 transition font-sans text-sm"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-slate-400 font-medium uppercase tracking-wider block text-[10px]">
-                Valor Comercial (R$)
-              </label>
-              <input 
-                type="number"
-                step="0.01"
-                required
-                value={totalValue}
-                onChange={(e) => setTotalValue(e.target.value)}
-                placeholder="0,00"
-                className="w-full bg-[#070b14] border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500/50 transition font-sans text-sm"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-slate-400 font-medium uppercase tracking-wider block text-[10px]">
-                Previsão de Entrega
-              </label>
-              <div className="relative flex items-center">
-                <input 
-                  type="date"
-                  required
-                  value={deliveryDate}
-                  onChange={(e) => setDeliveryDate(e.target.value)}
-                  className="w-full bg-[#070b14] border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500/50 transition font-sans text-sm pr-10"
-                />
-                <div className="absolute right-3 pointer-events-none text-slate-500">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800/60 mt-6">
-            <button 
-              type="button"
-              onClick={onClose}
-              className="bg-slate-900 hover:bg-slate-800 text-slate-400 px-4 py-2 rounded-xl font-bold transition text-sm font-sans border border-slate-800/80 cursor-pointer"
-            >
-              Cancelar
-            </button>
-            <button 
-              type="submit"
-              disabled={createOrderMutation.isPending}
-              className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 px-4 py-2 rounded-xl font-bold transition text-sm font-sans disabled:opacity-50 cursor-pointer"
-            >
-              {createOrderMutation.isPending ? 'Emitindo...' : 'Salvar Ordem'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-// ==========================================
-// COMPONENTE DA PÁGINA PRINCIPAL
-// ==========================================
-export default function OrdensPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const queryClient = useQueryClient();
-
-  const AVAILABLE_STATUSES = ['CRIADA', 'PLANEJADA', 'AGENDADA', 'EM TRANSPORTE', 'ENTREGUE'];
-
-  const { data: orders = [], isLoading, isFetching } = useQuery({
-    queryKey: ['sales-orders'],
-    queryFn: () => apiService.getOrders(),
-  });
-
-  const updateStatusMutation = useMutation({
-    mutationFn: ({ orderId, newStatus }: { orderId: string; newStatus: string }) => 
-      apiService.updateOrderStatus(orderId, newStatus),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sales-orders'] });
-      setActiveDropdown(null);
-    },
-  });
-
-  const normalizeStatus = (status: string): string => {
-    const s = status?.toUpperCase();
-    if (s === 'PENDENTE') return 'PLANEJADA';
-    return s || 'CRIADA';
-  };
-
-  const getStatusStyle = (status: string) => {
-    switch (normalizeStatus(status)) {
-      case 'CRIADA':
-        return 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
-      case 'PLANEJADA':
-        return 'bg-purple-500/10 text-purple-400 border border-purple-500/20';
-      case 'AGENDADA':
-        return 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20';
-      case 'EM TRANSPORTE':
-        return 'bg-amber-500/10 text-amber-400 border border-amber-500/20';
-      case 'ENTREGUE':
-        return 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
-      default:
-        return 'bg-slate-500/10 text-slate-400 border border-slate-500/20';
+  const loadOrders = async () => {
+    setLoading(true);
+    try {
+      const data = await apiService.getOrders();
+      setOrders(data);
+    } catch (error) {
+      console.error("Erro ao carregar ordens:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handleDuplicate = async (id: string) => {
+    try {
+      const listAtualizada = await apiService.duplicateOrder(id);
+      setOrders(listAtualizada); 
+    } catch (error) {
+      console.error("Erro ao duplicar ordem:", error);
+    }
+  };
+
+  const handlePrint = (order: SalesOrder) => {
+    const orderIdFormatted = order.id.replace('OV-', 'OT-');
+    if (typeof window !== 'undefined') {
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>Manifesto ${orderIdFormatted}</title>
+              <style>
+                body { font-family: 'Courier New', Courier, monospace; padding: 30px; background: #ffffff; color: #0f172a; }
+                .container { border: 2px dashed #cbd5e1; padding: 24px; border-radius: 8px; max-width: 600px; margin: 0 auto; }
+                .header { border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 20px; }
+                h1 { font-size: 14px; margin: 0; color: #0f172a; text-transform: uppercase; letter-spacing: 1px; }
+                .identificador { font-size: 12px; color: #64748b; margin-top: 4px; }
+                .divider { border-top: 2px solid #0f172a; margin: 15px 0; }
+                .row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13px; border-bottom: 1px dotted #f1f5f9; padding-bottom: 4px; }
+                .total-row { display: flex; justify-content: space-between; margin-top: 25px; padding-top: 15px; border-top: 1px dashed #0f172a; font-size: 14px; }
+                .footer { margin-top: 40px; text-align: center; font-size: 10px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h1>MANIFESTO DE ORDEM DE TRANSPORTE</h1>
+                  <div class="identificador">Identificador: ${orderIdFormatted}</div>
+                </div>
+                <div class="divider"></div>
+                <div class="row"><span><strong>Cliente:</strong></span> <span>${order.clientName}</span></div>
+                <div class="row"><span><strong>Data de Entrega:</strong></span> <span>${order.deliveryDate ? order.deliveryDate.split('-').reverse().join('/') : '---'}</span></div>
+                <div class="row"><span><strong>Modal de Transporte:</strong></span> <span>${order.transportType || '---'}</span></div>
+                <div class="row"><span><strong>Motorista Alocado:</strong></span> <span>${order.driverName || '---'}</span></div>
+                <div class="row"><span><strong>Placa Identificadora:</strong></span> <span>${order.vehiclePlate || '---'}</span></div>
+                
+                <div class="total-row">
+                  <span><strong>VALOR LÍQUIDO TOTAL:</strong></span> 
+                  <strong>${order.totalValue?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
+                </div>
+                <div class="footer">Sistemas Gestor de Cargas - Emissão Automatizada</div>
+              </div>
+              <script>
+                setTimeout(() => { window.print(); window.close(); }, 250);
+              </script>
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+      }
+    }
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingOrder) return;
+    try {
+      const listAtualizada = await apiService.saveOrder(editingOrder);
+      setOrders(listAtualizada);
+      setEditingOrder(null); 
+    } catch (error) {
+      console.error("Erro ao salvar ordem:", error);
+    }
+  };
+
+  const handleSort = (key: SortKeys) => {
+    const isAsc = sortKey === key && sortOrder === 'asc';
+    setSortOrder(isAsc ? 'desc' : 'asc');
+    setSortKey(key);
+  };
+
+  // FILTRAGEM BASEADA NA ABA ATIVA
+  const filteredOrders = orders.filter(order => {
+    if (activeTab === 'andamento') return order.status !== 'ENTREGUE';
+    if (activeTab === 'entregues') return order.status === 'ENTREGUE';
+    return true; // Aba 'todas'
+  });
+
+  const sortedOrders = [...filteredOrders].sort((a, b) => {
+    const valueA = a[sortKey] ?? '';
+    const valueB = b[sortKey] ?? '';
+
+    if (typeof valueA === 'number' && typeof valueB === 'number') {
+      return sortOrder === 'asc' ? valueA - valueB : valueB - valueA;
+    }
+    return sortOrder === 'asc' 
+      ? String(valueA).localeCompare(String(valueB)) 
+      : String(valueB).localeCompare(String(valueA));
+  });
+
+  const totalOrders = sortedOrders.length;
+  const totalFinancialValue = sortedOrders.reduce((acc, order) => acc + (order.totalValue || 0), 0);
+
+  const getPriorityBadge = (id: string) => {
+    const hash = id.charCodeAt(id.length - 1);
+    if (hash % 3 === 0) return <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-md"><AlertCircle className="h-3 w-3" /> ALTA</span>;
+    if (hash % 3 === 1) return <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md">MÉDIA</span>;
+    return <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">BAIXA</span>;
+  };
+
+  const getDocStatusBadge = (id: string) => {
+    const hash = id.charCodeAt(id.length - 1);
+    return hash % 2 === 0 
+      ? <span className="text-[11px] font-medium text-slate-300 bg-slate-800 border border-slate-700 px-2 py-0.5 rounded-md whitespace-nowrap">MDF-e/CT-e Emitidos</span>
+      : <span className="text-[11px] font-medium text-amber-400 bg-amber-500/5 border border-amber-500/20 px-2 py-0.5 rounded-md whitespace-nowrap">Docs Pendentes</span>;
+  };
+
   return (
-    <div className="min-h-screen bg-[#070b14] text-slate-200 p-4 md:p-8 overflow-x-hidden">
-      <div className="max-w-6xl mx-auto flex flex-col space-y-6">
-        
-        {/* Cabeçalho da Página */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-5 gap-4">
-          <div>
-            <h1 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
-              📦 Gestão de Ordens de Venda
-            </h1>
-            <p className="text-xs text-slate-400 mt-1">
-              Monitorização, controle e emissão ativa de ordens comerciais.
-            </p>
-          </div>
-          
-          <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-            <button
-              onClick={() => queryClient.invalidateQueries({ queryKey: ['sales-orders'] })}
-              className="p-2.5 bg-slate-900 hover:bg-slate-800 text-slate-400 rounded-xl border border-slate-800 transition cursor-pointer"
-              title="Atualizar lista"
-            >
-              <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin text-emerald-500' : ''}`} />
-            </button>
-
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 px-4 py-2.5 rounded-xl font-bold text-sm transition shadow-lg shadow-emerald-500/10 flex items-center justify-center gap-2 cursor-pointer flex-1 sm:flex-initial"
-            >
-              <span>+</span> Nova Ordem
-            </button>
-          </div>
+    <div className="p-4 md:p-6 space-y-6 bg-slate-950 text-slate-100 min-h-screen overflow-x-hidden">
+      
+      {/* CABEÇALHO */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-lg md:text-xl font-black uppercase tracking-wider flex items-center gap-2 text-white">
+            🚚 Gestão de Ordens de Transporte
+          </h1>
+          <p className="text-xs text-slate-400 mt-1">
+            Monitorização, controle e despacho ativo de frotas logísticas.
+          </p>
         </div>
-
-        {/* Linha do Fluxo Operacional Unificado (Scroller horizontal suave no mobile) */}
-        <div className="bg-[#0b1324]/40 border border-slate-800/80 rounded-xl p-4 flex items-center gap-2 text-[10px] font-mono tracking-wider overflow-x-auto whitespace-nowrap scrollbar-none">
-          <span className="text-slate-500 font-bold uppercase mr-2 shrink-0">Fluxo Operacional Garantido:</span>
-          {AVAILABLE_STATUSES.map((status, index) => (
-            <div key={status} className="flex items-center gap-2 shrink-0">
-              <span className={`px-2 py-0.5 rounded border ${getStatusStyle(status)} font-bold`}>
-                {status}
-              </span>
-              {index < AVAILABLE_STATUSES.length - 1 && <span className="text-slate-700">→</span>}
-            </div>
-          ))}
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <button 
+            onClick={loadOrders}
+            className="p-2.5 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-xl transition-colors text-slate-400 hover:text-white active:scale-95"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+          <button className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl transition-all active:scale-95 shadow-[0_4px_20px_rgba(16,185,129,0.2)]">
+            <Plus className="h-4 w-4 stroke-[3]" /> Nova Ordem
+          </button>
         </div>
-
-        {/* Tabela de Ordens */}
-        <div className="bg-[#0b1324] border border-slate-800 rounded-2xl shadow-xl p-2 overflow-visible">
-          {isLoading ? (
-            <div className="text-center py-12 text-xs text-slate-500 font-mono animate-pulse">
-              Carregando ordens de venda de forma segura...
-            </div>
-          ) : orders.length === 0 ? (
-            <div className="text-center py-12 text-xs text-slate-500 font-mono">
-              Nenhuma ordem registada no sistema. Clique em "+ Nova Ordem" para começar.
-            </div>
-          ) : (
-            <div className="w-full overflow-x-auto rounded-xl">
-              <table className="w-full text-left text-xs font-mono min-w-[700px]">
-                <thead className="bg-[#0e172a]/60 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800">
-                  <tr>
-                    <th className="px-6 py-4">ID Ordem</th>
-                    <th className="px-6 py-4">Cliente</th>
-                    <th className="px-6 py-4">Data Entrega</th>
-                    <th className="px-6 py-4">Transporte</th>
-                    <th className="px-6 py-4">Valor Total</th>
-                    <th className="px-6 py-4 text-left">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/50 text-sm font-sans">
-                  {orders.map((order: any, idx: number) => {
-                    const currentId = order.id || order.orderId || String(idx);
-                    const currentStatus = normalizeStatus(order.status);
-
-                    return (
-                      <tr key={currentId} className="hover:bg-[#121b2e]/40 transition text-slate-300">
-                        <td className="px-6 py-4 font-mono text-xs text-emerald-400 font-bold">
-                          {order.orderId || `OV-${String(idx + 1).padStart(3, '0')}`}
-                        </td>
-                        <td className="px-6 py-4 font-bold text-white max-w-[200px] truncate">
-                          {order.clientName}
-                        </td>
-                        <td className="px-6 py-4 text-slate-400 font-mono text-xs">
-                          {order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString('pt-PT') : '---'}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-md text-xs text-slate-300 font-mono">
-                            {order.transportType}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-white font-bold font-mono text-xs">
-                          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(order.totalValue)}
-                        </td>
-                        
-                        {/* Status dropdown com Z-Index seguro e alinhamento à direita */}
-                        <td className="px-6 py-4 text-left relative overflow-visible">
-                          <button
-                            type="button"
-                            onClick={() => setActiveDropdown(activeDropdown === currentId ? null : currentId)}
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold font-mono tracking-wide uppercase transition hover:scale-105 active:scale-95 cursor-pointer ${getStatusStyle(currentStatus)}`}
-                          >
-                            <span>{currentStatus}</span>
-                            <ChevronDown className="h-3 w-3 opacity-60" />
-                          </button>
-
-                          {activeDropdown === currentId && (
-                            <div className="absolute right-6 sm:left-6 mt-1 w-40 bg-[#0e172a] border border-slate-800 rounded-xl p-1.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-100">
-                              {AVAILABLE_STATUSES.map((statusOption) => (
-                                <button
-                                  key={statusOption}
-                                  type="button"
-                                  onClick={() => updateStatusMutation.mutate({ orderId: order.id, newStatus: statusOption })}
-                                  className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[10px] font-bold font-mono uppercase transition mb-0.5 last:mb-0 cursor-pointer ${
-                                    currentStatus === statusOption 
-                                      ? 'bg-[#1e293b] text-emerald-400 font-extrabold' 
-                                      : 'text-slate-400 hover:bg-[#111c30] hover:text-white'
-                                  }`}
-                                >
-                                  {statusOption}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
       </div>
 
-      <CreateOrderModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-      />
+      {/* SISTEMA DE ABAS PARA LIMPAR A TELA */}
+      <div className="flex border-b border-slate-800 gap-2 text-xs font-mono">
+        <button 
+          onClick={() => setActiveTab('andamento')}
+          className={`px-4 py-2.5 flex items-center gap-2 font-bold uppercase transition-all border-b-2 ${
+            activeTab === 'andamento' 
+              ? 'border-emerald-500 text-white bg-emerald-500/5' 
+              : 'border-transparent text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Inbox className="h-3.5 w-3.5" /> Em Andamento ({orders.filter(o => o.status !== 'ENTREGUE').length})
+        </button>
+        <button 
+          onClick={() => setActiveTab('entregues')}
+          className={`px-4 py-2.5 flex items-center gap-2 font-bold uppercase transition-all border-b-2 ${
+            activeTab === 'entregues' 
+              ? 'border-blue-500 text-white bg-blue-500/5' 
+              : 'border-transparent text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Archive className="h-3.5 w-3.5" /> Histórico ({orders.filter(o => o.status === 'ENTREGUE').length})
+        </button>
+        <button 
+          onClick={() => setActiveTab('todas')}
+          className={`px-4 py-2.5 flex items-center gap-2 font-bold uppercase transition-all border-b-2 ${
+            activeTab === 'todas' 
+              ? 'border-slate-500 text-white bg-slate-500/5' 
+              : 'border-transparent text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          Todas ({orders.length})
+        </button>
+      </div>
+
+      {/* ESTÁGIOS */}
+      {activeTab === 'andamento' && (
+        <div className="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-4 flex items-center gap-2 overflow-x-auto text-[10px] font-mono tracking-wider uppercase text-slate-500 scrollbar-none snap-x animate-fadeIn">
+          <span className="text-slate-400 font-bold shrink-0 mr-2">Fluxo Ativo:</span>
+          <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-1 rounded-md font-bold">Criada</span>
+          <ChevronRight className="h-3 w-3 shrink-0" />
+          <span className="bg-purple-500/10 text-purple-400 border border-purple-500/20 px-2 py-1 rounded-md font-bold">Planejada</span>
+          <ChevronRight className="h-3 w-3 shrink-0" />
+          <span className="bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-2 py-1 rounded-md font-bold">Agendada</span>
+          <ChevronRight className="h-3 w-3 shrink-0" />
+          <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-1 rounded-md font-bold">Em Transporte</span>
+        </div>
+      )}
+
+      {/* TABELA PRINCIPAL */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+        <div className="overflow-x-auto w-full">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-slate-800 bg-slate-950/40 text-[10px] font-mono tracking-widest text-slate-400 uppercase select-none">
+                <th onClick={() => handleSort('id')} className="p-4 cursor-pointer hover:text-white transition-colors">
+                  <div className="flex items-center gap-1.5">ID OT <ArrowUpDown className="h-3 w-3 text-slate-500" /></div>
+                </th>
+                <th className="p-4">Prioridade</th>
+                <th onClick={() => handleSort('clientName')} className="p-4 cursor-pointer hover:text-white transition-colors">
+                  <div className="flex items-center gap-1.5">Cliente <ArrowUpDown className="h-3 w-3 text-slate-500" /></div>
+                </th>
+                <th onClick={() => handleSort('deliveryDate')} className="p-4 cursor-pointer hover:text-white transition-colors hidden md:table-cell">
+                  <div className="flex items-center gap-1.5">Data Entrega <ArrowUpDown className="h-3 w-3 text-slate-500" /></div>
+                </th>
+                <th className="p-4 hidden sm:table-cell">Documentação</th>
+                <th onClick={() => handleSort('totalValue')} className="p-4 text-right cursor-pointer hover:text-white transition-colors">
+                  <div className="flex items-center justify-end gap-1.5">Valor Total <ArrowUpDown className="h-3 w-3 text-slate-500" /></div>
+                </th>
+                <th onClick={() => handleSort('status')} className="p-4 text-center cursor-pointer hover:text-white transition-colors hidden sm:table-cell">
+                  <div className="flex items-center justify-center gap-1.5">Status <ArrowUpDown className="h-3 w-3 text-slate-500" /></div>
+                </th>
+                <th className="p-4 text-center">Ações</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/60 text-xs md:text-sm">
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="p-12 text-center text-slate-500 font-mono text-xs uppercase">Processando malha logística...</td>
+                </tr>
+              ) : sortedOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="p-12 text-center text-slate-500 font-mono text-xs uppercase">Nenhuma ordem nesta categoria.</td>
+                </tr>
+              ) : (
+                sortedOrders.map((order, idx) => {
+                  const isEntregue = order.status === 'ENTREGUE';
+                  return (
+                    <tr 
+                      key={`${order.id}-${idx}`}
+                      onClick={() => setSelectedOrder(order)}
+                      className="hover:bg-slate-800/40 transition-all duration-150 cursor-pointer group"
+                    >
+                      <td className="p-4 font-mono font-bold text-emerald-400">
+                        {order.id.replace('OV-', 'OT-')}
+                      </td>
+                      <td className="p-4">{getPriorityBadge(order.id)}</td>
+                      <td className="p-4 font-semibold text-white max-w-[140px] md:max-w-none truncate">
+                        {order.clientName}
+                      </td>
+                      <td className="p-4 font-mono text-xs text-slate-300 hidden md:table-cell">
+                        {order.deliveryDate ? order.deliveryDate.split('-').reverse().join('/') : '---'}
+                      </td>
+                      <td className="p-4 hidden sm:table-cell">{getDocStatusBadge(order.id)}</td>
+                      <td className="p-4 text-right font-mono font-bold text-white">
+                        {order.totalValue?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </td>
+                      <td className="p-4 text-center hidden sm:table-cell">
+                        <span className={`inline-block px-3 py-1 rounded-full text-[11px] font-black border min-w-[120px] text-center
+                          ${order.status === 'CRIADA' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : ''}
+                          ${order.status === 'PLANEJADA' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : ''}
+                          ${order.status === 'AGENDADA' ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' : ''}
+                          ${order.status === 'EM TRANSPORTE' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : ''}
+                          ${order.status === 'ENTREGUE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : ''}
+                        `}>
+                          {order.status}
+                        </span>
+                      </td>
+
+                      <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-center gap-1">
+                          <button 
+                            onClick={() => setSelectedOrder(order)} 
+                            className="p-1.5 hover:bg-slate-800 rounded-md text-slate-400 hover:text-white"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                          </button>
+                          
+                          <button 
+                            onClick={() => !isEntregue && setEditingOrder(order)}
+                            disabled={isEntregue}
+                            title={isEntregue ? "Ordens entregues não podem ser alteradas" : "Editar Ordem"}
+                            className={`p-1.5 rounded-md text-slate-400 transition-all ${
+                              isEntregue 
+                                ? 'opacity-25 cursor-not-allowed bg-transparent' 
+                                : 'hover:bg-slate-800 hover:text-sky-400'
+                            }`}
+                          >
+                            <Edit2 className="h-3.5 w-3.5" />
+                          </button>
+
+                          <button 
+                            onClick={() => handleDuplicate(order.id)}
+                            className="p-1.5 hover:bg-slate-800 rounded-md text-slate-400 hover:text-purple-400 active:scale-90"
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </button>
+                          <button 
+                            onClick={() => handlePrint(order)}
+                            className="p-1.5 hover:bg-slate-800 rounded-md text-slate-400 hover:text-emerald-400"
+                          >
+                            <Printer className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* MÉTRICAS */}
+        <div className="bg-slate-950/60 border-t border-slate-800 px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs font-mono text-slate-400">
+          <div>Volume na Aba: <span className="text-white font-bold">{totalOrders} OTs</span></div>
+          <div>Faturamento da Visão: <span className="text-emerald-400 font-extrabold text-sm">{totalFinancialValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
+        </div>
+      </div>
+
+      {/* GAVETA: DETALHES (OLHO) */}
+      {selectedOrder && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex justify-end" onClick={() => setSelectedOrder(null)}>
+          <div className="w-full sm:max-w-xl bg-[#0b1329] h-full border-l border-slate-800/60 p-6 flex flex-col overflow-y-auto" onClick={e => e.stopPropagation()}>
+            
+            {/* Cabeçalho da Gaveta */}
+            <div className="flex justify-between items-start border-b border-slate-800/40 pb-4">
+              <div>
+                <span className="text-xs font-mono text-emerald-400 font-bold tracking-wider">
+                  {selectedOrder.id.replace('OV-', 'OT-')}
+                </span>
+                <h2 className="text-xl font-bold text-white mt-1">{selectedOrder.clientName}</h2>
+              </div>
+              <button onClick={() => setSelectedOrder(null)} className="p-2 text-slate-400 hover:text-white bg-slate-950/80 rounded-xl border border-slate-800/60 transition-colors">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            
+            {/* Conteúdo */}
+            <div className="mt-6 space-y-6 flex-1">
+              
+              {/* Banner de Status Concluído */}
+              {selectedOrder.status === 'ENTREGUE' && (
+                <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-4 py-3 rounded-xl flex items-center gap-2.5 text-xs font-medium">
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  <span>Esta ordem de transporte foi finalizada e arquivada com sucesso.</span>
+                </div>
+              )}
+
+              {/* Bloco de Dados da Operação */}
+              <div>
+                <h3 className="text-[10px] font-mono uppercase tracking-widest text-slate-500 mb-2">Dados da Operação</h3>
+                <div className="grid grid-cols-2 gap-y-4 gap-x-4 bg-slate-950/40 p-5 rounded-xl border border-slate-850/60 text-xs">
+                  <div>
+                    <span className="text-slate-500 block mb-0.5 uppercase tracking-wider text-[10px]">Tipo Transporte</span>
+                    <span className="text-slate-200 font-bold text-sm">{selectedOrder.transportType || '---'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block mb-0.5 uppercase tracking-wider text-[10px]">Valor Financeiro</span>
+                    <span className="text-slate-200 font-mono font-bold text-sm">
+                      {selectedOrder.totalValue?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block mb-0.5 uppercase tracking-wider text-[10px]">Motorista</span>
+                    <span className="text-slate-200 font-bold text-sm">{selectedOrder.driverName || '---'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block mb-0.5 uppercase tracking-wider text-[10px]">Placa do Veículo</span>
+                    <span className="text-slate-200 font-mono font-bold text-sm">{selectedOrder.vehiclePlate || '---'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bloco de Detalhes do Encerramento (Visível apenas se estiver Entregue) */}
+              {selectedOrder.status === 'ENTREGUE' && (
+                <div>
+                  <h3 className="text-[10px] font-mono uppercase tracking-widest text-slate-500 mb-2">Informações de Recebimento</h3>
+                  <div className="grid grid-cols-2 gap-y-4 gap-x-4 bg-emerald-950/10 p-5 rounded-xl border border-emerald-900/20 text-xs">
+                    <div>
+                      <span className="text-slate-500 block mb-0.5 uppercase tracking-wider text-[10px]">Data de Entrega</span>
+                      <span className="text-emerald-400 font-mono font-bold text-sm">
+                        {selectedOrder.deliveryDate ? selectedOrder.deliveryDate.split('-').reverse().join('/') : '---'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block mb-0.5 uppercase tracking-wider text-[10px]">Recebedor (Canhoto)</span>
+                      <span className="text-slate-200 font-bold text-sm">Portaria / Conferido</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Histórico de Alterações (Timeline) */}
+              <div>
+                <h3 className="text-[10px] font-mono uppercase tracking-widest text-slate-500 mb-3">Histórico de Alterações</h3>
+                <div className="space-y-4 relative before:absolute before:inset-y-1 before:left-1.5 before:w-0.5 before:bg-slate-800">
+                  
+                  {/* Evento 1: Marco Final de Entrega */}
+                  {selectedOrder.status === 'ENTREGUE' && (
+                    <div className="flex gap-4 relative items-start text-xs">
+                      <div className="w-3 h-3 rounded-full bg-emerald-500 border-4 border-[#0b1329] z-10 mt-1 shrink-0"></div>
+                      <div>
+                        <span className="text-[10px] font-mono text-slate-500 block">
+                          {selectedOrder.deliveryDate ? selectedOrder.deliveryDate.split('-').reverse().join('/') : '08/07/2026'} às 14:30 // Motorista
+                        </span>
+                        <p className="text-slate-200 font-medium">
+                          Status alterado para <span className="text-emerald-400 font-bold">ENTREGUE</span>
+                        </p>
+                        <p className="text-slate-400 text-[11px] mt-0.5">Canhoto digitalizado e viagem finalizada pelo app do condutor.</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Evento 2: Planejamento */}
+                  <div className="flex gap-4 relative items-start text-xs">
+                    <div className="w-3 h-3 rounded-full bg-blue-500 border-4 border-[#0b1329] z-10 mt-1 shrink-0"></div>
+                    <div>
+                      <span className="text-[10px] font-mono text-slate-500 block">08/07/2026 às 09:42 // Operador</span>
+                      <p className="text-slate-200 font-medium">Ordem atualizada e pronta para expedição</p>
+                    </div>
+                  </div>
+
+                  {/* Evento 3: Criação */}
+                  <div className="flex gap-4 relative items-start text-xs">
+                    <div className="w-3 h-3 rounded-full bg-slate-700 border-4 border-[#0b1329] z-10 mt-1 shrink-0"></div>
+                    <div>
+                      <span className="text-[10px] font-mono text-slate-500 block">08/07/2026 às 08:00 // Sistema Integrador</span>
+                      <p className="text-slate-400">Ordem de venda criada e sincronizada com banco comercial.</p>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* GAVETA: EDIÇÃO (LÁPIS) */}
+      {editingOrder && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex justify-end" onClick={() => setEditingOrder(null)}>
+          <form 
+            onSubmit={handleSaveEdit}
+            className="w-full sm:max-w-xl bg-[#0b1329] h-full border-l border-slate-800/60 p-6 flex flex-col overflow-y-auto text-xs" 
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-start border-b border-slate-800/40 pb-4">
+              <div>
+                <span className="text-xs font-mono text-sky-400 font-bold tracking-wider">Modo Edição // {editingOrder.id.replace('OV-', 'OT-')}</span>
+                <h2 className="text-xl font-bold text-white mt-1">{editingOrder.clientName}</h2>
+              </div>
+              <button type="button" onClick={() => setEditingOrder(null)} className="p-2 text-slate-400 hover:text-white bg-slate-950/80 rounded-xl border border-slate-800/60 transition-colors">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="mt-6 space-y-5 flex-1">
+              <div>
+                <label className="block text-slate-400 mb-1.5 font-mono uppercase tracking-wider text-[10px]">Status Operacional</label>
+                <select 
+                  value={editingOrder.status}
+                  onChange={e => setEditingOrder({...editingOrder, status: e.target.value as any})}
+                  className="w-full p-3.5 bg-slate-950 border border-slate-800/80 rounded-xl text-white focus:border-sky-500 outline-none font-medium transition-colors appearance-none"
+                  style={{ backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 14px center', backgroundSize: '16px' }}
+                >
+                  <option value="CRIADA">CRIADA</option>
+                  <option value="PLANEJADA">PLANEJADA</option>
+                  <option value="AGENDADA">AGENDADA</option>
+                  <option value="EM TRANSPORTE">EM TRANSPORTE</option>
+                  <option value="ENTREGUE">ENTREGUE</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-400 mb-1.5 font-mono uppercase tracking-wider text-[10px]">Modal Frota</label>
+                  <input 
+                    type="text" 
+                    value={editingOrder.transportType || ''} 
+                    onChange={e => setEditingOrder({...editingOrder, transportType: e.target.value})}
+                    placeholder="Ex: Carreta, Sider"
+                    className="w-full p-3.5 bg-slate-950 border border-slate-800/80 rounded-xl text-white focus:border-sky-500 outline-none font-medium transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 mb-1.5 font-mono uppercase tracking-wider text-[10px]">Placa Veículo</label>
+                  <input 
+                    type="text" 
+                    value={editingOrder.vehiclePlate || ''} 
+                    onChange={e => setEditingOrder({...editingOrder, vehiclePlate: e.target.value.toUpperCase()})}
+                    placeholder="ABC-1234"
+                    className="w-full p-3.5 bg-slate-950 border border-slate-800/80 rounded-xl text-white focus:border-sky-500 outline-none font-mono font-medium transition-colors tracking-wide"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 mb-1.5 font-mono uppercase tracking-wider text-[10px]">Condutor (Motorista)</label>
+                <input 
+                  type="text" 
+                  value={editingOrder.driverName || ''} 
+                  onChange={e => setEditingOrder({...editingOrder, driverName: e.target.value})}
+                  placeholder="Nome do motorista alocado"
+                  className="w-full p-3.5 bg-slate-950 border border-slate-800/80 rounded-xl text-white focus:border-sky-500 outline-none font-medium transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 mb-1.5 font-mono uppercase tracking-wider text-[10px]">Data de Entrega</label>
+                <input 
+                  type="date" 
+                  value={editingOrder.deliveryDate || ''} 
+                  onChange={e => setEditingOrder({...editingOrder, deliveryDate: e.target.value})}
+                  className="w-full p-3.5 bg-slate-950 border border-slate-800/80 rounded-xl text-white focus:border-sky-500 outline-none font-mono font-medium transition-colors text-left"
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-slate-800/40 pt-4 flex items-center gap-3 mt-4">
+              <button type="button" onClick={() => setEditingOrder(null)} className="flex-1 py-3.5 bg-slate-950/60 hover:bg-slate-950 border border-slate-800/60 rounded-xl text-slate-400 hover:text-white transition-colors uppercase font-bold tracking-wider text-[11px]">
+                Cancelar
+              </button>
+              <button type="submit" className="flex-1 py-3.5 bg-sky-500 hover:bg-sky-600 text-slate-950 rounded-xl transition-all uppercase font-black tracking-wider text-[11px] shadow-[0_4px_20px_rgba(14,165,233,0.15)]">
+                Salvar Alterações
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
     </div>
   );
 }
