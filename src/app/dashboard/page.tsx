@@ -30,7 +30,6 @@ export default function DashboardPage() {
 
   const ticketMedio = totalOrdens > 0 ? faturamentoTotal / totalOrdens : 0;
 
-  // Indicadores de volumetria estrutural (Design Limpo - Estilo SAP/Oracle)
   const totalClientes = 42;
   const totalTransportadoras = 8;
   const totalItens = 156;
@@ -40,7 +39,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 md:space-y-8 w-full p-4 md:p-6 text-slate-200 overflow-x-hidden">
       
-      {/* 1. CABEÇALHO DA INTERFACE (ADAPTADO MOBILE) */}
+      {/* 1. CABEÇALHO DA INTERFACE */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-4 border-b border-slate-800/60 pb-6">
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-3">
@@ -59,8 +58,8 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      {/* 2. METRICAS PRINCIPAIS (GRID RESPONSIVO) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+      {/* 2. METRICAS PRINCIPAIS (RESPONSIVAS) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         
         {/* Card 1: Faturamento Total */}
         <div className="bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 md:p-6 shadow-sm relative overflow-hidden group">
@@ -109,7 +108,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Card 3: Total de Ordens */}
-        <div className="bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 md:p-6 shadow-sm relative overflow-hidden group">
+        <div className="bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 md:p-6 shadow-sm relative overflow-hidden group col-span-1 sm:col-span-2 lg:col-span-1">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pipeline de Ordens</span>
             <div className="p-2.5 bg-slate-800 rounded-xl text-slate-300 border border-slate-700/50">
@@ -133,7 +132,7 @@ export default function DashboardPage() {
 
       </div>
 
-      {/* 3. VOLUMETRIA DE CADASTROS (EMPILHA EM TELAS MINI) */}
+      {/* 3. VOLUMETRIA DE CADASTROS */}
       <div className="bg-slate-900/30 border border-slate-800/60 rounded-2xl p-4 md:p-5">
         <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
           🗂️ Volumetria de Cadastros Estruturais
@@ -176,7 +175,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 4. BLOCO DE ANÁLISE GRÁFICA E HISTÓRICO (PREVINE QUEBRA DO GRÁFICO NO CELULAR) */}
+      {/* 4. BLOCO DE ANÁLISE GRÁFICA E HISTÓRICO */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
         
         <div className="xl:col-span-3 w-full overflow-hidden max-w-full">
@@ -187,7 +186,6 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Registro de Atividades Lateral */}
         <div className="xl:col-span-1 bg-slate-900/80 border border-slate-800/80 rounded-2xl p-5 shadow-sm w-full">
           <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
             <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">

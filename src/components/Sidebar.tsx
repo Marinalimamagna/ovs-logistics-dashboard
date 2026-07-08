@@ -17,17 +17,30 @@ export function Sidebar() {
 
   return (
     <>
+      {/* 📱 TOPO FIXO PARA CELULAR (MOBILE HEADER) - Corrigido para OVGs */}
+      <div className="md:hidden w-full bg-slate-900 border-b border-slate-800 p-4 shrink-0 select-none">
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 bg-emerald-500 rounded-lg flex items-center justify-center font-bold text-slate-950 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+            G
+          </div>
+          <div>
+            <h1 className="text-sm font-black text-white uppercase tracking-wider leading-none">Gestor de OVGs</h1>
+            <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mt-0.5 block">Centro de Controle</span>
+          </div>
+        </div>
+      </div>
+
       {/* 🖥️ SIDEBAR PARA TELAS GRANDES (DESKTOP) */}
       <aside className="hidden md:flex w-64 bg-slate-900 border-r border-slate-800 flex-col h-full select-none shrink-0">
-        {/* Brand / Logo */}
+        {/* Marca / Logo - Corrigido para OVGs */}
         <div className="p-6 border-b border-slate-800">
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 bg-emerald-500 rounded-lg flex items-center justify-center font-bold text-slate-950 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
-              L
+              G
             </div>
             <div>
-              <h1 className="text-sm font-black text-white uppercase tracking-wider leading-none">Logix Senior</h1>
-              <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mt-0.5 block">Control Center</span>
+              <h1 className="text-sm font-black text-white uppercase tracking-wider leading-none">Gestor de OVGs</h1>
+              <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mt-0.5 block">Centro de Controle</span>
             </div>
           </div>
         </div>
@@ -70,7 +83,7 @@ export function Sidebar() {
       </aside>
 
       {/* 📱 BARRA DE NAVEGAÇÃO INFERIOR PARA TELAS PEQUENAS (MOBILE) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-slate-900 border-t border-slate-800 flex items-center justify-around px-2 z-50 shadow-[0_-10px_25px_rgba(0,0,0,0.5)] select-none">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-slate-900 border-t border-slate-800 flex items-center justify-around px-4 z-50 shadow-[0_-10px_25px_rgba(0,0,0,0.5)] select-none">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
@@ -79,13 +92,13 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center justify-center gap-1.5 flex-1 h-full relative transition-colors ${
+              className={`flex flex-col items-center justify-center gap-1 flex-1 h-full relative transition-colors ${
                 isActive ? 'text-emerald-400' : 'text-slate-500'
               }`}
             >
               <Icon className={`h-4 w-4 ${isActive ? 'text-emerald-400' : 'text-slate-500'}`} />
-              <span className="text-[9px] font-medium tracking-tight font-sans truncate max-w-[62px]">
-                {item.name.split(' ')[0]} {/* Pega apenas a primeira palavra para não quebrar layout */}
+              <span className="text-[10px] font-medium tracking-tight font-sans truncate max-w-[65px]">
+                {item.name.split(' ')[0]}
               </span>
               
               {isActive && (
