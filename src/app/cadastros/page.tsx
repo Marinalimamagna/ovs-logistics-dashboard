@@ -172,24 +172,26 @@ export default function CadastrosPage() {
   };
 
   return (
-    <div className="space-y-6 w-full p-4 md:p-0 pb-16 md:pb-0 text-slate-100 font-sans antialiased">
+    <div className="space-y-6 w-full max-w-full px-2 sm:px-4 md:px-0 pb-24 md:pb-0 text-slate-100 font-sans antialiased overflow-x-hidden">
+      
+      {/* Header Responsivo */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">📁 Cadastros Básicos</h1>
-          <p className="text-slate-400 text-sm mt-1">Gerenciamento unificado de parceiros, modais de transporte e itens operacionais.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">📁 Cadastros Básicos</h1>
+          <p className="text-slate-400 text-xs sm:text-sm mt-1">Gerenciamento unificado de parceiros, modais de transporte e itens operacionais.</p>
         </div>
         <button 
           type="button"
           onClick={abrirModalCriar}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl font-bold text-xs shadow-md transition-all w-full sm:w-auto cursor-pointer"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl font-bold text-xs shadow-md transition-all w-full sm:w-auto cursor-pointer shrink-0"
         >
           <Plus className="h-4 w-4 stroke-[3]" />
           Novo Registro
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-slate-800 gap-6 overflow-x-auto whitespace-nowrap pb-px">
+      {/* Tabs com Scroll Lateral Suave no Mobile */}
+      <div className="flex border-b border-slate-800 gap-6 overflow-x-auto whitespace-nowrap pb-px no-scrollbar">
         <button
           type="button"
           onClick={() => { setActiveTab('clientes'); setSearchTerm(''); }}
@@ -220,13 +222,13 @@ export default function CadastrosPage() {
       </div>
 
       {sucessoMsg && (
-        <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-4 rounded-xl flex items-center gap-2 text-sm">
+        <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-4 rounded-xl flex items-center gap-2 text-sm w-full">
           <CheckCircle2 className="h-5 w-5 shrink-0" />
           <p className="font-medium">{sucessoMsg}</p>
         </div>
       )}
 
-      {/* Search Input */}
+      {/* Input de Busca */}
       <div className="relative w-full">
         <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-500" />
         <input
@@ -238,13 +240,13 @@ export default function CadastrosPage() {
         />
       </div>
 
-      {/* Main Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-        <div className="overflow-x-auto w-full">
-          <table className="w-full text-left border-collapse min-w-[800px]">
+      {/* Tabela Principal Otimizada com Safe-Scroll no Mobile */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl w-full max-w-full overflow-hidden">
+        <div className="overflow-x-auto w-full block scrollbar-thin">
+          <table className="w-full text-left border-collapse min-w-[700px] sm:min-w-[800px]">
             <thead>
               <tr className="bg-slate-950/40 border-b border-slate-800 text-slate-400 font-mono text-xs uppercase tracking-wider">
-                <th className="py-3.5 px-6 font-bold w-24">ID</th>
+                <th className="py-3.5 px-4 sm:px-6 font-bold w-20">ID</th>
                 {activeTab === 'clientes' && (
                   <>
                     <th className="py-3.5 px-4 font-bold">Razão Social / Nome</th>
@@ -267,7 +269,7 @@ export default function CadastrosPage() {
                     <th className="py-3.5 px-4 font-bold text-right">Unidade de Medida</th>
                   </>
                 )}
-                <th className="py-3.5 px-6 font-bold text-center w-32">Ações</th>
+                <th className="py-3.5 px-4 sm:px-6 font-bold text-center w-28">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/40 text-xs text-slate-300">
@@ -276,12 +278,12 @@ export default function CadastrosPage() {
                   <tr><td colSpan={6} className="py-6 text-center text-slate-500 font-mono">Buscando clientes...</td></tr>
                 ) : clients.filter(c => (c?.name || '').toLowerCase().includes(searchTerm.toLowerCase())).map((c, idx) => (
                   <tr key={c.id || `client-${idx}`} className="hover:bg-slate-800/20 transition-all">
-                    <td className="py-4 px-6 font-mono font-bold text-emerald-400">{c.id || '—'}</td>
+                    <td className="py-4 px-4 sm:px-6 font-mono font-bold text-emerald-400">{c.id || '—'}</td>
                     <td className="py-4 px-4 font-bold text-slate-200">{c.name || '—'}</td>
                     <td className="py-4 px-4 font-mono text-slate-400 text-right">{c.document || '—'}</td>
                     <td className="py-4 px-4 text-slate-300">{c.city || '—'} - {c.state || '—'}</td>
                     <td className="py-4 px-4 font-mono text-slate-400 text-right">{c.email || '—'}</td>
-                    <td className="py-4 px-6 text-center">
+                    <td className="py-4 px-4 sm:px-6 text-center">
                       <div className="flex items-center justify-center gap-1.5">
                         <button type="button" onClick={() => abrirModalVerOuEditar(c, 'visualizar')} className="p-1.5 bg-slate-800 text-slate-400 hover:text-white rounded-lg cursor-pointer"><Eye className="h-3.5 w-3.5" /></button>
                         <button type="button" onClick={() => abrirModalVerOuEditar(c, 'editar')} className="p-1.5 bg-slate-800 text-slate-400 hover:text-emerald-400 rounded-lg cursor-pointer"><Edit2 className="h-3.5 w-3.5" /></button>
@@ -296,13 +298,13 @@ export default function CadastrosPage() {
                   <tr><td colSpan={5} className="py-6 text-center text-slate-500 font-mono">Buscando frotas...</td></tr>
                 ) : transportTypes.filter(t => (t?.name || '').toLowerCase().includes(searchTerm.toLowerCase())).map((t, idx) => (
                   <tr key={t.id || `trans-${idx}`} className="hover:bg-slate-800/20 transition-all">
-                    <td className="py-4 px-6 font-mono font-bold text-emerald-400">{t.id || '—'}</td>
+                    <td className="py-4 px-4 sm:px-6 font-mono font-bold text-emerald-400">{t.id || '—'}</td>
                     <td className="py-4 px-4 font-bold text-slate-200">{t.name || '—'}</td>
                     <td className="py-4 px-4 font-mono text-slate-300 text-right">{t.capacity || '—'}</td>
                     <td className="py-4 px-4">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold font-mono border ${t.active ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>{t.active ? 'ATIVO' : 'INATIVO'}</span>
                     </td>
-                    <td className="py-4 px-6 text-center">
+                    <td className="py-4 px-4 sm:px-6 text-center">
                       <div className="flex items-center justify-center gap-1.5">
                         <button type="button" onClick={() => abrirModalVerOuEditar(t, 'visualizar')} className="p-1.5 bg-slate-800 text-slate-400 hover:text-white rounded-lg cursor-pointer"><Eye className="h-3.5 w-3.5" /></button>
                         <button type="button" onClick={() => abrirModalVerOuEditar(t, 'editar')} className="p-1.5 bg-slate-800 text-slate-400 hover:text-emerald-400 rounded-lg cursor-pointer"><Edit2 className="h-3.5 w-3.5" /></button>
@@ -317,11 +319,11 @@ export default function CadastrosPage() {
                   <tr><td colSpan={5} className="py-6 text-center text-slate-500 font-mono">Buscando catálogo...</td></tr>
                 ) : items.filter(i => (i?.name || '').toLowerCase().includes(searchTerm.toLowerCase())).map((i, idx) => (
                   <tr key={i.id || `item-${idx}`} className="hover:bg-slate-800/20 transition-all">
-                    <td className="py-4 px-6 font-mono font-bold text-emerald-400">{i.id || '—'}</td>
+                    <td className="py-4 px-4 sm:px-6 font-mono font-bold text-emerald-400">{i.id || '—'}</td>
                     <td className="py-4 px-4 font-bold text-slate-200">{i.name || '—'}</td>
                     <td className="py-4 px-4 text-slate-400">{i.category || '—'}</td>
                     <td className="py-4 px-4 font-mono text-slate-300 text-right">{i.unitOfMeasure || 'UN'}</td>
-                    <td className="py-4 px-6 text-center">
+                    <td className="py-4 px-4 sm:px-6 text-center">
                       <div className="flex items-center justify-center gap-1.5">
                         <button type="button" onClick={() => abrirModalVerOuEditar(i, 'visualizar')} className="p-1.5 bg-slate-800 text-slate-400 hover:text-white rounded-lg cursor-pointer"><Eye className="h-3.5 w-3.5" /></button>
                       </div>
@@ -334,12 +336,12 @@ export default function CadastrosPage() {
         </div>
       </div>
 
-      {/* FORM MODAL */}
+      {/* FORM MODAL RESPONSIVO */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto scrollbar-none">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
+              <h2 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider font-mono">
                 {modalMode === 'criar' && '✨ Novo'}
                 {modalMode === 'editar' && '📝 Editar'}
                 {modalMode === 'visualizar' && '👁️ Visualizar'} - {activeTab}
@@ -368,7 +370,7 @@ export default function CadastrosPage() {
                       <input type="text" required maxLength={2} disabled={modalMode === 'visualizar'} value={clientState} onChange={e => setClientState(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 disabled:opacity-50" />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">E-mail</label>
                       <input type="email" disabled={modalMode === 'visualizar'} value={clientEmail} onChange={e => setClientEmail(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 disabled:opacity-50" />
