@@ -38,32 +38,32 @@ export default function DashboardPage() {
   const ultimasOrdens = orders?.slice(-4).reverse() || [];
 
   return (
-    <div className="space-y-8 w-full p-6 text-slate-200">
+    <div className="space-y-6 md:space-y-8 w-full p-4 md:p-6 text-slate-200 overflow-x-hidden">
       
-      {/* 1. CABEÇALHO DA INTERFACE */}
+      {/* 1. CABEÇALHO DA INTERFACE (ADAPTADO MOBILE) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-4 border-b border-slate-800/60 pb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
-            <BarChart3 className="h-6 w-6 text-teal-400" />
+          <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-3">
+            <BarChart3 className="h-5 w-5 md:h-6 md:w-6 text-teal-400" />
             Dashboard Executivo
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Análise de performance, volumetria de cadastros e fluxo de suprimentos.</p>
+          <p className="text-slate-400 text-xs md:text-sm mt-1">Análise de performance, volumetria de cadastros e fluxo de suprimentos.</p>
         </div>
         <button 
           onClick={() => refetch()} 
           disabled={isLoading || isFetching} 
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 rounded-xl text-slate-300 border border-slate-800 transition text-xs w-full sm:w-auto font-medium shadow-sm"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 rounded-xl text-slate-300 border border-slate-800 transition text-xs w-full sm:w-auto font-medium shadow-sm active:scale-95"
         >
           <RefreshCw className={`h-3.5 w-3.5 text-teal-400 ${isFetching ? 'animate-spin' : ''}`} />
           Sincronizar Dados
         </button>
       </div>
 
-      {/* 2. METRICAS PRINCIPAIS (EQUILÍBRIO DE CORES PASTEIS / ACCENTS) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* 2. METRICAS PRINCIPAIS (GRID RESPONSIVO) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
         
-        {/* Card 1: Faturamento Total (Laranja Coral Pastel sutil como Accent) */}
-        <div className="bg-slate-900/90 border border-slate-800/80 rounded-2xl p-6 shadow-sm relative overflow-hidden group">
+        {/* Card 1: Faturamento Total */}
+        <div className="bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 md:p-6 shadow-sm relative overflow-hidden group">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Faturamento Bruto</span>
             <div className="p-2.5 bg-orange-500/10 rounded-xl text-orange-400/90 border border-orange-500/10">
@@ -71,7 +71,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="mt-4">
-            <h3 className="text-2xl font-bold text-white tracking-tight">
+            <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">
               {isLoading ? (
                 <span className="inline-block w-32 h-7 bg-slate-800 animate-pulse rounded"></span>
               ) : (
@@ -85,8 +85,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Card 2: Ticket Médio (Teal Suave) */}
-        <div className="bg-slate-900/90 border border-slate-800/80 rounded-2xl p-6 shadow-sm relative overflow-hidden group">
+        {/* Card 2: Ticket Médio */}
+        <div className="bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 md:p-6 shadow-sm relative overflow-hidden group">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Ticket Médio / OV</span>
             <div className="p-2.5 bg-teal-500/10 rounded-xl text-teal-400 border border-teal-500/10">
@@ -94,7 +94,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="mt-4">
-            <h3 className="text-2xl font-bold text-white tracking-tight">
+            <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">
               {isLoading ? (
                 <span className="inline-block w-32 h-7 bg-slate-800 animate-pulse rounded"></span>
               ) : (
@@ -108,8 +108,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Card 3: Total de Ordens (Slate Neutro) */}
-        <div className="bg-slate-900/90 border border-slate-800/80 rounded-2xl p-6 shadow-sm relative overflow-hidden group">
+        {/* Card 3: Total de Ordens */}
+        <div className="bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 md:p-6 shadow-sm relative overflow-hidden group">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pipeline de Ordens</span>
             <div className="p-2.5 bg-slate-800 rounded-xl text-slate-300 border border-slate-700/50">
@@ -117,7 +117,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="mt-4">
-            <h3 className="text-2xl font-bold text-white tracking-tight">
+            <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">
               {isLoading ? (
                 <span className="inline-block w-16 h-7 bg-slate-800 animate-pulse rounded"></span>
               ) : (
@@ -133,8 +133,8 @@ export default function DashboardPage() {
 
       </div>
 
-      {/* 3. VOLUMETRIA DE CADASTROS (ESTRUTURA EM LINHA E CORES PASTÉIS INTEGRADAS) */}
-      <div className="bg-slate-900/30 border border-slate-800/60 rounded-2xl p-5">
+      {/* 3. VOLUMETRIA DE CADASTROS (EMPILHA EM TELAS MINI) */}
+      <div className="bg-slate-900/30 border border-slate-800/60 rounded-2xl p-4 md:p-5">
         <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
           🗂️ Volumetria de Cadastros Estruturais
         </h2>
@@ -145,10 +145,10 @@ export default function DashboardPage() {
               <div className="p-2 bg-amber-500/5 rounded-lg text-amber-500/70 border border-amber-500/10"><Users className="h-4 w-4" /></div>
               <div>
                 <p className="text-xs text-slate-500 font-medium">Clientes</p>
-                <p className="text-base font-bold text-slate-200 mt-0.5">{totalClientes} <span className="text-xs font-normal text-slate-500">ativos</span></p>
+                <p className="text-sm md:text-base font-bold text-slate-200 mt-0.5">{totalClientes} <span className="text-xs font-normal text-slate-500">ativos</span></p>
               </div>
             </div>
-            <ArrowUpRight className="h-4 w-4 text-slate-700" />
+            <ArrowUpRight className="h-4 w-4 text-slate-700 hidden sm:block" />
           </div>
 
           <div className="bg-slate-900/60 border border-slate-800/40 rounded-xl p-4 flex items-center justify-between">
@@ -156,10 +156,10 @@ export default function DashboardPage() {
               <div className="p-2 bg-teal-500/5 rounded-lg text-teal-400/70 border border-teal-500/10"><Truck className="h-4 w-4" /></div>
               <div>
                 <p className="text-xs text-slate-500 font-medium">Frota / Transp.</p>
-                <p className="text-base font-bold text-slate-200 mt-0.5">{totalTransportadoras} <span className="text-xs font-normal text-slate-500">homologadas</span></p>
+                <p className="text-sm md:text-base font-bold text-slate-200 mt-0.5">{totalTransportadoras} <span className="text-xs font-normal text-slate-500">homologadas</span></p>
               </div>
             </div>
-            <ArrowUpRight className="h-4 w-4 text-slate-700" />
+            <ArrowUpRight className="h-4 w-4 text-slate-700 hidden sm:block" />
           </div>
 
           <div className="bg-slate-900/60 border border-slate-800/40 rounded-xl p-4 flex items-center justify-between">
@@ -167,30 +167,27 @@ export default function DashboardPage() {
               <div className="p-2 bg-rose-500/5 rounded-lg text-rose-400/70 border border-rose-500/10"><Boxes className="h-4 w-4" /></div>
               <div>
                 <p className="text-xs text-slate-500 font-medium">Itens / SKU</p>
-                <p className="text-base font-bold text-slate-200 mt-0.5">{totalItens} <span className="text-xs font-normal text-slate-500">em catálogo</span></p>
+                <p className="text-sm md:text-base font-bold text-slate-200 mt-0.5">{totalItens} <span className="text-xs font-normal text-slate-500">em catálogo</span></p>
               </div>
             </div>
-            <ArrowUpRight className="h-4 w-4 text-slate-700" />
+            <ArrowUpRight className="h-4 w-4 text-slate-700 hidden sm:block" />
           </div>
 
         </div>
       </div>
 
-      {/* 4. BLOCO DE ANÁLISE GRÁFICA E HISTÓRICO LADO A LADO */}
+      {/* 4. BLOCO DE ANÁLISE GRÁFICA E HISTÓRICO (PREVINE QUEBRA DO GRÁFICO NO CELULAR) */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
         
-        <div className="xl:col-span-3 w-full">
+        <div className="xl:col-span-3 w-full overflow-hidden max-w-full">
           {isLoading ? (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 h-80 bg-slate-900/60 border border-slate-800 rounded-2xl animate-pulse" />
-              <div className="lg:col-span-1 h-80 bg-slate-900/60 border border-slate-800 rounded-2xl animate-pulse" />
-            </div>
+            <div className="h-72 md:h-80 bg-slate-900/60 border border-slate-800 rounded-2xl animate-pulse" />
           ) : (
             <AnalyticsCharts orders={orders || []} />
           )}
         </div>
 
-        {/* Registo de Atividades Lateral - Clean e Sóbrio */}
+        {/* Registro de Atividades Lateral */}
         <div className="xl:col-span-1 bg-slate-900/80 border border-slate-800/80 rounded-2xl p-5 shadow-sm w-full">
           <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
             <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiService } from '../../services/api'; // Ajustado para o caminho correto
+import { apiService } from '../../services/api'; 
 import { X, RefreshCw, ChevronDown } from 'lucide-react';
 
 // ==========================================
@@ -76,9 +76,9 @@ export function CreateOrderModal({ isOpen, onClose }: CreateOrderModalProps) {
         }
       `}} />
 
-      <div className="bg-[#0b1324] border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+      <div className="bg-[#0b1324] border border-slate-800 rounded-2xl w-full max-w-md p-5 md:p-6 shadow-2xl">
         <div className="flex items-center justify-between border-b border-slate-800/60 pb-4 mb-5">
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
+          <h2 className="text-sm md:text-base font-bold text-white flex items-center gap-2">
             ✨ Emitir Nova Ordem de Venda
           </h2>
           <button 
@@ -105,7 +105,7 @@ export function CreateOrderModal({ isOpen, onClose }: CreateOrderModalProps) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-slate-400 font-medium uppercase tracking-wider block text-[10px]">
                 Tipo de Transporte
@@ -143,7 +143,7 @@ export function CreateOrderModal({ isOpen, onClose }: CreateOrderModalProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-slate-400 font-medium uppercase tracking-wider block text-[10px]">
                 Valor Comercial (R$)
@@ -208,16 +208,13 @@ export default function OrdensPage() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  // Lista oficial e restrita de status (Sem o intruso PENDENTE!)
   const AVAILABLE_STATUSES = ['CRIADA', 'PLANEJADA', 'AGENDADA', 'EM TRANSPORTE', 'ENTREGUE'];
 
-  // Procurar ordens cadastradas
   const { data: orders = [], isLoading, isFetching } = useQuery({
     queryKey: ['sales-orders'],
     queryFn: () => apiService.getOrders(),
   });
 
-  // Mutation para atualizar o status
   const updateStatusMutation = useMutation({
     mutationFn: ({ orderId, newStatus }: { orderId: string; newStatus: string }) => 
       apiService.updateOrderStatus(orderId, newStatus),
@@ -227,7 +224,6 @@ export default function OrdensPage() {
     },
   });
 
-  // Função auxiliar para normalizar dados legados "PENDENTE" -> "PLANEJADA"
   const normalizeStatus = (status: string): string => {
     const s = status?.toUpperCase();
     if (s === 'PENDENTE') return 'PLANEJADA';
@@ -252,13 +248,13 @@ export default function OrdensPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#070b14] text-slate-200 p-8">
+    <div className="min-h-screen bg-[#070b14] text-slate-200 p-4 md:p-8 overflow-x-hidden">
       <div className="max-w-6xl mx-auto flex flex-col space-y-6">
         
         {/* Cabeçalho da Página */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-5 gap-4">
           <div>
-            <h1 className="text-xl font-bold text-white flex items-center gap-2">
+            <h1 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
               📦 Gestão de Ordens de Venda
             </h1>
             <p className="text-xs text-slate-400 mt-1">
@@ -266,7 +262,7 @@ export default function OrdensPage() {
             </p>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
             <button
               onClick={() => queryClient.invalidateQueries({ queryKey: ['sales-orders'] })}
               className="p-2.5 bg-slate-900 hover:bg-slate-800 text-slate-400 rounded-xl border border-slate-800 transition cursor-pointer"
@@ -277,18 +273,18 @@ export default function OrdensPage() {
 
             <button
               onClick={() => setIsModalOpen(true)}
-              className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 px-4 py-2 rounded-xl font-bold text-sm transition shadow-lg shadow-emerald-500/10 flex items-center gap-2 cursor-pointer"
+              className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 px-4 py-2.5 rounded-xl font-bold text-sm transition shadow-lg shadow-emerald-500/10 flex items-center justify-center gap-2 cursor-pointer flex-1 sm:flex-initial"
             >
               <span>+</span> Nova Ordem
             </button>
           </div>
         </div>
 
-        {/* Linha do Fluxo Operacional Unificado */}
-        <div className="bg-[#0b1324]/40 border border-slate-800/80 rounded-xl p-4 flex items-center gap-2 text-[10px] font-mono tracking-wider">
-          <span className="text-slate-500 font-bold uppercase mr-2">Fluxo Operacional Garantido:</span>
+        {/* Linha do Fluxo Operacional Unificado (Scroller horizontal suave no mobile) */}
+        <div className="bg-[#0b1324]/40 border border-slate-800/80 rounded-xl p-4 flex items-center gap-2 text-[10px] font-mono tracking-wider overflow-x-auto whitespace-nowrap scrollbar-none">
+          <span className="text-slate-500 font-bold uppercase mr-2 shrink-0">Fluxo Operacional Garantido:</span>
           {AVAILABLE_STATUSES.map((status, index) => (
-            <div key={status} className="flex items-center gap-2">
+            <div key={status} className="flex items-center gap-2 shrink-0">
               <span className={`px-2 py-0.5 rounded border ${getStatusStyle(status)} font-bold`}>
                 {status}
               </span>
@@ -298,7 +294,7 @@ export default function OrdensPage() {
         </div>
 
         {/* Tabela de Ordens */}
-        <div className="bg-[#0b1324] border border-slate-800 rounded-2xl shadow-xl overflow-visible p-2">
+        <div className="bg-[#0b1324] border border-slate-800 rounded-2xl shadow-xl p-2 overflow-visible">
           {isLoading ? (
             <div className="text-center py-12 text-xs text-slate-500 font-mono animate-pulse">
               Carregando ordens de venda de forma segura...
@@ -308,8 +304,8 @@ export default function OrdensPage() {
               Nenhuma ordem registada no sistema. Clique em "+ Nova Ordem" para começar.
             </div>
           ) : (
-            <div className="overflow-x-auto overflow-y-visible">
-              <table className="w-full text-left text-xs font-mono">
+            <div className="w-full overflow-x-auto rounded-xl">
+              <table className="w-full text-left text-xs font-mono min-w-[700px]">
                 <thead className="bg-[#0e172a]/60 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800">
                   <tr>
                     <th className="px-6 py-4">ID Ordem</th>
@@ -330,7 +326,7 @@ export default function OrdensPage() {
                         <td className="px-6 py-4 font-mono text-xs text-emerald-400 font-bold">
                           {order.orderId || `OV-${String(idx + 1).padStart(3, '0')}`}
                         </td>
-                        <td className="px-6 py-4 font-bold text-white">
+                        <td className="px-6 py-4 font-bold text-white max-w-[200px] truncate">
                           {order.clientName}
                         </td>
                         <td className="px-6 py-4 text-slate-400 font-mono text-xs">
@@ -345,7 +341,7 @@ export default function OrdensPage() {
                           {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(order.totalValue)}
                         </td>
                         
-                        {/* Status Tratado & Corrigido */}
+                        {/* Status dropdown com Z-Index seguro e alinhamento à direita */}
                         <td className="px-6 py-4 text-left relative overflow-visible">
                           <button
                             type="button"
@@ -356,9 +352,8 @@ export default function OrdensPage() {
                             <ChevronDown className="h-3 w-3 opacity-60" />
                           </button>
 
-                          {/* Menu suspenso restrito ao fluxo real */}
                           {activeDropdown === currentId && (
-                            <div className="absolute left-6 mt-1 w-40 bg-[#0e172a] border border-slate-800 rounded-xl p-1.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-100">
+                            <div className="absolute right-6 sm:left-6 mt-1 w-40 bg-[#0e172a] border border-slate-800 rounded-xl p-1.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-100">
                               {AVAILABLE_STATUSES.map((statusOption) => (
                                 <button
                                   key={statusOption}
